@@ -1,0 +1,67 @@
+ {
+    "config": {
+      "application": "Hilbert Transform",
+      "application_ru_RU": "Преобразование Гильберта",
+      "category": [
+        "Applications"
+      ],
+      "parameters_template": [
+        { "name": "result_name", "title": "New Seismic Data Name", "type": "LineEdit", "default": "Hilbert" },
+        {
+          "name": "seismic_2d",
+          "type": "ListView",
+          "inputDataType": "SeismicData2DGeoms",
+          "title": "Input 2D"
+        },
+        {
+          "name": "seismic_3d",
+          "type": "ListView",
+          "inputDataType": "SeismicData3DGeoms",
+          "title": "Input 3D"
+        },
+        {
+          "name": "inst_amplitude",
+          "title": "Instantaneous amplitude",
+          "type": "CheckBox",
+          "checked": true
+        },
+        {
+          "name": "inst_frequency",
+          "title": "Instantaneous frequency",
+          "type": "CheckBox",
+          "checked": true
+        },
+        {
+          "name": "phase",
+          "title": "Phase",
+          "type": "CheckBox",
+          "checked": true
+        },
+        {
+          "name": "min_frequency",
+          "type": "DoubleSpinBox",
+          "title": "Minimum frequency",
+          "default": 0,
+          "min": 0,
+          "max": 500
+        },
+        {
+          "name": "max_frequency",
+          "type": "DoubleSpinBox",
+          "title": "Maximum frequency",
+          "default": 100,
+          "min": 0,
+          "max": 500
+        },
+        {
+          "name": "border_correction",
+          "type": "SpinBox",
+          "title": "Border correction (samples)",
+          "default": 20,
+          "min": 0,
+          "max": 500
+        }
+      ]
+    },
+    "name": "HilbertTransform"
+  }

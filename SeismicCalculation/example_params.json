@@ -1,0 +1,30 @@
+[
+{
+    "program_name": "CalculatorTemplA",
+    "job_description": {
+        "seismic_3d": ["auto cube\ncube\nSeismic_section", "auto cube\ncube\nHilbert (Instantaneous phase)"],
+        "result_name": "new name",
+        "formula": "cube/Seismic_section + cube/Hilbert (Instantaneous phase)",
+        "Threads Count": 10
+    },
+    "project_id": 3344276
+},
+
+
+{
+    "program_name": "CalculatorTemplA",
+    "job_description": {"formula": "(cube/Seismic_section+cube/Imported)/2", 
+        "seismic_3d": ["cube_geom\ncube\nSeismic_section", "cube_geom\ncube\nImported"],
+        "result_name": "result",
+        "Threads Count": 10
+    },
+    "project_id": 19637517
+},
+
+{
+    "program_name": "SeismicCalculation",
+    "job_description": {"Threads Count": 10, "formula": "Differ/x2", "result_name": "SeisCalc", "seismic_3d": ["geometry_cube\nDiffer\nx2"]},
+    "project_id": 19637259
+}
+
+]

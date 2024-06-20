@@ -1,0 +1,12 @@
+{
+    "program_name": "Coherence",
+    "job_description": {
+        "Input Seismic3D Name": ["cube\nSeismic_section"],
+        "Input Seismic2D Names": ["070122\nSeismic_section","070124\nSeismic_section"],
+        "New Name": "new name",
+        "Threads Count": 10,
+        "shift": 1,
+        "window": 15
+    },
+    "project_id": 19636343
+}

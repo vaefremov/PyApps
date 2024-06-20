@@ -1,0 +1,10 @@
+{
+    "program_name": "Example03",
+    "job_description": {
+        "seismic_3d": ["cube\nSeismic_section"],
+        "seismic_2d": ["070122\nSeismic_section", "070124\nSeismic_section"],
+        "result_name": "new name",
+        "Threads Count": 10
+    },
+    "project_id": 3344276
+}

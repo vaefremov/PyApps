@@ -1,0 +1,9 @@
+{
+    "program_name": "Example02_async",
+    "job_description": {
+        "Input Seismic3D Name": ["cube\nSeismic_section"],
+        "New Seismic3D Name": "new name",
+        "Threads Count": 10
+    },
+    "project_id": 3344276
+}

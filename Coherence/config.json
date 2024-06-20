@@ -1,0 +1,28 @@
+{
+    "config": {
+      "application": "Coherence",
+      "category": [ "Applications" ],
+      "parameters_template": [
+          { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms", "type": "ListView" },
+          { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
+          { "name": "New Name", "type": "LineEdit", "default": "Coherence" },
+          {
+          "name": "shift",
+          "type": "SpinBox",
+          "title": "shift",
+          "default": 1,
+          "min": 0,
+          "max": 50
+        },
+		{
+          "name": "window",
+          "type": "SpinBox",
+          "title": "window",
+          "default": 15,
+          "min": 0,
+          "max": 100
+        },
+        { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 8 }
+      ]
+    }
+  }

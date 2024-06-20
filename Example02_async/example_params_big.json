@@ -1,0 +1,9 @@
+{
+    "program_name": "Example02_async",
+    "job_description": {
+        "Input Seismic3D Name": ["STK_afPSDM\nsss2"],
+        "New Seismic3D Name": "new name",
+        "Threads Count": 10
+    },
+    "project_id": 3344276
+}

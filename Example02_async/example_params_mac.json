@@ -1,0 +1,9 @@
+{
+    "program_name": "Example02_async",
+    "job_description": {
+        "Input Seismic3D Name": ["cube1\nattr6"],
+        "New Seismic3D Name": "new name",
+        "Threads Count": 5
+    },
+    "project_id": 60
+}
