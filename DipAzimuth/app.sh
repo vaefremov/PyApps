@@ -7,6 +7,4 @@ else
 fi
 DIR=$(dirname $0)
 export PYTHONPATH=.
-python ${DIR}/main.py $@
-RC=$?
-exit $RC
+exec python ${DIR}/main.py $@

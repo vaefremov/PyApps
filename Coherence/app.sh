@@ -7,4 +7,4 @@ else
 fi
 DIR=$(dirname $0)
 export PYTHONPATH=.
-python ${DIR}/main.py $@
+exec python ${DIR}/main.py $@
