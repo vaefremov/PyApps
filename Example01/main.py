@@ -6,7 +6,7 @@ from di_lib import di_app
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
-# some comment
+# some comment ++++ miha
 # some other comment + addition
 class ExampleJob(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
