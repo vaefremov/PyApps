@@ -19,7 +19,7 @@ class ExampleJob(di_app.DiAppSeismic3D):
 
 if __name__ == "__main__":
     LOG.debug(f"Starting job Example01")
-    print('Hello')
+    LOG.debug('Hello')
     job = ExampleJob()
     res_final = job.run()
     LOG.info(f"{res_final}")
