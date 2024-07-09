@@ -2,15 +2,18 @@ from typing import Optional, Tuple
 import logging
 import numpy as np
 
+import numexpr as ne
+
 from di_lib import di_app
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
+MAXFLOAT = float(np.finfo(np.float32).max)
 
 class SeismicCalculation(di_app.DiAppSeismic3DMultiple):
     def __init__(self) -> None:
         super().__init__(in_name_par="seismic_3d",
-                out_name_par="result_name", out_names=["formula"])
+                out_name_par="result_name", out_names=["formula1"])
         
         # Input datasets names are converted to the agreed upon format 
         # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
@@ -21,14 +24,27 @@ class SeismicCalculation(di_app.DiAppSeismic3DMultiple):
         # argument of compute(). Replacement are applied in reverse order of name lengths, most
         # long names replaced first.
         for num, nm in reversed(sorted(enumerate(cube_names_for_formula), key=lambda x: len(x[1]))):
-            self.formula = self.formula.replace(nm, f"f_in_tup[{num}]")
-
-        LOG.info(f"Original formula: {self.description['formula']} Final formula: {self.formula}")
-
+            self.formula = self.formula.replace(nm, f"fintup{num}")
+        self.formula = self.formula.lower()
+        self.formula = self.formula.strip()
+       
+        LOG.info(f"\n ***FORMULA*** \nOriginal formula: {self.description['formula']} \nFinal formula: {self.formula}")
+       
     def compute(self, f_in_tup: Tuple[np.ndarray]) -> Tuple:
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
-        f_out = eval(self.formula)
-        return (f_out,)
+        if (f_in_tup[0]>= 0.1*MAXFLOAT).all() or (f_in_tup[0] == np.inf).all():
+            LOG.info("***EMPTY***")
+            np.nan_to_num(f_in_tup[0], inf=MAXFLOAT, copy=False)
+            return (f_in_tup[0],)
+        
+        else:
+            fintup = list(f_in_tup)
+            for i, v in enumerate(f_in_tup):
+                globals() ["fintup{}".format(i)] = np.where((fintup[i] >= 0.1*MAXFLOAT) | (fintup[i] == np.inf), np.nan, fintup[i])
+        
+            f_out = ne.evaluate(self.formula)
+            np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
+            return (f_out,)
 
 if __name__ == "__main__":
     LOG.debug(f"Starting job")
