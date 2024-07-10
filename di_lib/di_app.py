@@ -53,11 +53,13 @@ def main_sigint_handler_with_pool(pool, signum, frame):
 def enlarge_fragment(frag: Frag, marg: int) -> Frag:
     no_i_f = frag.no_i - marg
     span_i_f = frag.span_i + 2*marg
+    # !!! TBD: actually, this works only in the case of marg==0. Should fix it!
     if frag.no_i == 0:
         no_i_f = 0
         span_i_f = frag.span_i + marg
     no_x_f = frag.no_x - marg
     span_x_f = frag.span_x + 2*marg
+    # !!! TBD: actually, this works only in the case of marg==0. Should fix it!
     if frag.no_x == 0:
         no_x_f = 0
         span_x_f = frag.span_x + marg
@@ -406,16 +408,20 @@ class DiAppSeismic3D2D(DiApp):
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
 
-        tmp_f: Optional[np.ndarray] = c_in.get_fragment(*frag)
+        frag_i = Frag(*frag)
+        frag_e = enlarge_fragment(Frag(*frag), self.margin)
+
+        tmp_f: Optional[np.ndarray] = c_in.get_fragment(*frag_e)
         if tmp_f is None:
-            LOG.info(f"Skipped: {i} {frag}")
+            LOG.info(f"Skipped: {i} {frag_e=} {frag=}")
             return i, "SKIP"
         f_out = self.compute((tmp_f,))
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(c_out, f_out):
-            output_frag_if_not_none(w, f, frag)
-        LOG.info(f"Processed {i} {frag}")
+            ar_out = f[frag_i.no_i-frag_e.no_i:frag_e.span_i-self.margin, frag_i.no_x-frag_e.no_x:frag_e.span_x-self.margin,:]
+            output_frag_if_not_none(w, ar_out, frag)
+        LOG.info(f"Processed {i} {frag_e=} {frag=}")
         return i, "OK"
 
     def process_line_data(self, nm, p_in, p_out):
