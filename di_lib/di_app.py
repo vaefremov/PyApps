@@ -22,6 +22,8 @@ LOG = logging.getLogger(__name__)
 class JobDescription(namedtuple("JobDescription", ["job_id", "project_id", "token", "server_url"])):
     __slots__ = ()
 
+Frag = namedtuple('Frag', "no_i span_i, no_x span_x")
+
 def parse_args() -> JobDescription:
     parser = argparse.ArgumentParser()
     parser.add_argument("-j", "--job", required=True, help="job ID")
@@ -47,6 +49,19 @@ def main_sigint_handler_with_pool(pool, signum, frame):
         pool.terminate()
         LOG.info(f"Pool terminated")
     sys.exit(100)
+
+def enlarge_fragment(frag: Frag, marg: int) -> Frag:
+    no_i_f = frag.no_i - marg
+    span_i_f = frag.span_i + 2*marg
+    if frag.no_i == 0:
+        no_i_f = 0
+        span_i_f = frag.span_i + marg
+    no_x_f = frag.no_x - marg
+    span_x_f = frag.span_x + 2*marg
+    if frag.no_x == 0:
+        no_x_f = 0
+        span_x_f = frag.span_x + marg
+    return Frag(no_i_f, span_i_f, no_x_f, span_x_f)
 
 
 class DiApp(metaclass=abc.ABCMeta):
