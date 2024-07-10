@@ -62,6 +62,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self._n_processes = 0
         self.total_frags = 0
         self.completed_frags = 0
+        self._margin = 0
 
     @property
     def description(self):
@@ -73,6 +74,11 @@ class DiApp(metaclass=abc.ABCMeta):
                 resp_j = json.loads(resp.content)
                 self._description = resp_j["job_description"]
         return self._description
+
+    @property
+    def margin(self):
+        self._margin = self.description.get("margin", 0)
+        return self._margin
 
     @property
     def n_processes(self):
