@@ -53,16 +53,14 @@ def main_sigint_handler_with_pool(pool, signum, frame):
 def enlarge_fragment(frag: Frag, marg: int) -> Frag:
     no_i_f = frag.no_i - marg
     span_i_f = frag.span_i + 2*marg
-    # !!! TBD: actually, this works only in the case of marg==0. Should fix it!
-    if frag.no_i == 0:
+    if no_i_f < 0:
+        span_i_f = frag.span_i + (marg + no_i_f) + marg
         no_i_f = 0
-        span_i_f = frag.span_i + marg
     no_x_f = frag.no_x - marg
     span_x_f = frag.span_x + 2*marg
-    # !!! TBD: actually, this works only in the case of marg==0. Should fix it!
-    if frag.no_x == 0:
+    if no_x_f < 0:
+        span_x_f = frag.span_x + (marg + no_x_f) + marg
         no_x_f = 0
-        span_x_f = frag.span_x + marg
     return Frag(no_i_f, span_i_f, no_x_f, span_x_f)
 
 
