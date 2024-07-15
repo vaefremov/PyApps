@@ -109,9 +109,11 @@ class DiApp(metaclass=abc.ABCMeta):
         if not all(i.dtype == in_array.dtype for i in out_arrays):
             LOG.error(f"Wrong dtype {in_array.dtype} {[a.dtype for a in out_arrays]}")
             return True
-        if not all(i.shape == in_array.shape for i in out_arrays):
+        # Shapes of output arrays must coinside with shapes of input arrays excluding last (time/deph) axis
+        if not all(i.shape[:-1] == in_array.shape[:-1] for i in out_arrays):
             LOG.error(f"Wrong shape {in_array.shape} {[a.shape for a in out_arrays]}")
             return True
+        # TBD!!!: should check if number of samples (last number in shape) is correct!
 
     @abc.abstractmethod
     def  compute(self, f_in: Tuple[np.ndarray]) -> Tuple:
@@ -295,6 +297,7 @@ class DiAppSeismic3DMultiple(DiApp):
         self.out_names = out_names
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
+        self.output_cubes_parameters = {}
 
     def process_fragment(self, i, c_in, c_out, frag):
         def output_frag_if_not_none(w_out, f_out, f_coords):
@@ -320,6 +323,17 @@ class DiAppSeismic3DMultiple(DiApp):
         if len(set(i[0] for i in cubes_names)) != 1:
             raise RuntimeError(f"All cubes must belong to the same geometry!")
         cubes = [self.session.get_cube(cn[0], cn[1], cn[2]) for cn in cubes_names]
+        # Check that all input cubes have the same time-axis parameters
+        c0 = cubes[0]
+        for c in cubes:
+            if c.time_step != c0.time_step:
+                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+            if c.n_samples != c0.n_samples:
+                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+            if c.data_start != c0.data_start:
+                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+            if c.domain != c0.domain:
+                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
         LOG.debug(f"{cubes=}")
         return cubes
 
@@ -329,8 +343,9 @@ class DiAppSeismic3DMultiple(DiApp):
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
             name2 = self.__class__.__name__ + f" ({result_name})"
-            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2)
+            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.output_cubes_parameters)
             res.append(c_out)
+        self.output_cubes_parameters.update(res[0]._get_info())
         return res
 
     def generate_optimal_grid(self):
