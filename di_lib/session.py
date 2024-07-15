@@ -43,13 +43,22 @@ class DISession:
         cube._read_info()
         return cube
 
-    def create_cube_writer_as_other(self, original_cube: DISeismicCube, name: str, attr_name: str) -> DISeismicCubeWriter:
+    def create_cube_writer_as_other(self, original_cube: DISeismicCube, name: str, attr_name: str, **kw) -> DISeismicCubeWriter:
         cube_writer = DISeismicCubeWriter(self.project_id, name, attr_name)
         cube_writer.server_url = self.server_url
         cube_writer.token = self.token
-        # TODO: Here we should copy descriptive information to the new cube
-        cube_writer._init_from_info(original_cube._get_info())
-        # and create cube on server
+        original_info = original_cube._get_info()
+        new_info = {}
+        new_info.update(original_info)
+        new_info["z_step"] = kw.get("z_step", original_info["z_step"])
+        new_info["z_start"] = kw.get("z_start", original_info["z_start"])
+        new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_nz = kw.get("nz", None)
+        if new_nz is None:
+            # Recalculate nz according to new z_step
+            new_nz = round(original_info["nz"] * (original_info["z_step"]  / new_info["z_step"] ))
+        new_info["nz"] = new_nz
+        cube_writer._init_from_info(new_info)
         cube_writer._create()
         return cube_writer
 
@@ -82,12 +91,23 @@ class DISession:
                 LOG.error("Delete failed: %s  / %s", resp.status_code, resp.content)
                 raise RuntimeError(f"Delete failed: {resp.status_code=}")
 
-    def create_line_writer_as_other(self, original_line: DISeismicLine, name: str, attr_name: str) -> DISeismicLineWriter:
+    def create_line_writer_as_other(self, original_line: DISeismicLine, name: str, attr_name: str, **kw) -> DISeismicLineWriter:
         line_writer = DISeismicLineWriter(self.project_id, name, attr_name)
         line_writer.server_url = self.server_url
         line_writer.token = self.token
         # TODO: Here we should copy descriptive information to the new cube
-        line_writer._init_from_info(original_line._get_info())
+        original_info = original_line._get_info()
+        new_info = {}
+        new_info.update(original_info)
+        new_info["z_step"] = kw.get("z_step", original_info["z_step"])
+        new_info["z_start"] = kw.get("z_start", original_info["z_start"])
+        new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_nz = kw.get("nz", None)
+        if new_nz is None:
+            # Recalculate nz according to new z_step
+            new_nz = round(original_info["nz"] * (original_info["z_step"]  / new_info["z_step"] ))
+        new_info["nz"] = new_nz
+        line_writer._init_from_info(new_info)
         # and create cube on server
         line_writer._create()
         return line_writer
