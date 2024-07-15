@@ -1,0 +1,20 @@
+{
+    "config": {
+      "application": "ExampleNewZStep",
+      "category": [ "Applications" ],
+      "parameters_template": [
+          { "name": "seismic_3d", "title": "Input Seismic3D Names", "inputDataType": "SeismicData3DGeoms", "type": "ListView"},
+          { "name": "seismic_2d", "title": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView"},
+          { "name": "result_name", "type": "LineEdit", "default": "Example03_result" },
+          { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 5 },
+          {
+            "name": "z_step",
+            "type": "DoubleSpinBox",
+            "title": "New sample time (us)",
+            "default": 2000,
+            "min": 10,
+            "max": 20000
+          }
+      ]
+    }
+  }
