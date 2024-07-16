@@ -8,9 +8,9 @@ logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 MAXFLOAT = float(np.finfo(np.float32).max)
 
-class InterpolationZ (di_app.DiAppSeismic3D2D):
+class InterpolationZ (di_app.DiAppSeismic3D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="Input Seismic3D Name", in_line_names_par="Input Seismic2D Names",
+        super().__init__(in_name_par="Input Seismic3D Name", 
                 out_name_par="New Name", out_names=["Interpolation"])
         
         # Input datasets names are converted to the agreed upon format 
