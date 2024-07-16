@@ -417,7 +417,8 @@ class DiAppSeismic3D2D(DiApp):
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
         self.lines_in = []
-
+        self.output_cubes_parameters = {}
+        
     def process_fragment(self, i, c_in, c_out, frag):
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
@@ -471,8 +472,9 @@ class DiAppSeismic3D2D(DiApp):
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
             name2 = self.__class__.__name__ + f" ({result_name})"
-            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2)
+            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.output_cubes_parameters)
             res.append(c_out)
+        self.output_cubes_parameters.update(res[0]._get_info())
         return res
 
     def open_input_lines(self):
