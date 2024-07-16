@@ -15,7 +15,7 @@
       },
   {
         "name": "step",
-        "type": "SpinBox",
+        "type": "DoubleSpinBox",
         "title": "step [ms]",
         "default": 2,
         "min": 0.0001,
