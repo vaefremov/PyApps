@@ -203,6 +203,7 @@ class DiAppSeismic3D(DiApp):
         self.out_names = out_names
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
+        self.output_cubes_parameters = {}
 
     def process_fragment(self, i, c_in, c_out, frag):
         def output_frag_if_not_none(w_out, f_out, f_coords):
@@ -327,13 +328,13 @@ class DiAppSeismic3DMultiple(DiApp):
         c0 = cubes[0]
         for c in cubes:
             if c.time_step != c0.time_step:
-                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+                raise RuntimeError("Time axis parameters of the input cubes do not coincide")
             if c.n_samples != c0.n_samples:
-                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+                raise RuntimeError("Time axis parameters of the input cubes do not coincide")
             if c.data_start != c0.data_start:
-                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+                raise RuntimeError("Time axis parameters of the input cubes do not coincide")
             if c.domain != c0.domain:
-                raise RuntimeError("Time axis parameters of the input cubbes do not coinside")
+                raise RuntimeError("Time axis parameters of the input cubes do not coincide")
         LOG.debug(f"{cubes=}")
         return cubes
 
