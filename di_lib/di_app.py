@@ -22,7 +22,11 @@ LOG = logging.getLogger(__name__)
 class JobDescription(namedtuple("JobDescription", ["job_id", "project_id", "token", "server_url"])):
     __slots__ = ()
 
-Frag = namedtuple('Frag', "no_i span_i, no_x span_x")
+class Frag(namedtuple("Frag", "no_i span_i no_x span_x")):
+    __slots__ = ()
+
+class Context(namedtuple("Context", "in_cube_params in_line_params out_cube_params out_line_params")):
+    __slots__ = ()
 
 def parse_args() -> JobDescription:
     parser = argparse.ArgumentParser()
@@ -78,6 +82,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self.total_frags = 0
         self.completed_frags = 0
         self._margin = None
+        self.out_data_params = {}
 
     @property
     def description(self):
@@ -116,7 +121,7 @@ class DiApp(metaclass=abc.ABCMeta):
         # TBD!!!: should check if number of samples (last number in shape) is correct!
 
     @abc.abstractmethod
-    def  compute(self, f_in: Tuple[np.ndarray]) -> Tuple:
+    def  compute(self, f_in: Tuple[np.ndarray], context: Context=Context(None, None, None, None)) -> Tuple:
         pass
 
     def process_fragment(self, i, c_in, c_out, frag):
@@ -130,7 +135,7 @@ class DiApp(metaclass=abc.ABCMeta):
             return i, "SKIP"
         f_out = self.compute((tmp_f,))
         if DiApp.wrong_output_formats((tmp_f,), f_out):
-            raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
+            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(c_out, f_out):
             output_frag_if_not_none(w, f, frag)
         LOG.info(f"Processed {i} {frag}")
@@ -203,7 +208,7 @@ class DiAppSeismic3D(DiApp):
         self.out_names = out_names
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
-        self.output_cubes_parameters = {}
+        # self.out_data_params = {}
 
     def process_fragment(self, i, c_in, c_out, frag):
         def output_frag_if_not_none(w_out, f_out, f_coords):
@@ -214,9 +219,11 @@ class DiAppSeismic3D(DiApp):
         if tmp_f is None:
             LOG.info(f"Skipped: {i} {frag}")
             return i, "SKIP"
-        f_out = self.compute((tmp_f,))
+        out_cube_params = c_out[0]._get_info() if len(c_out) else None
+        context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
-            raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
+            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(c_out, f_out):
             output_frag_if_not_none(w, f, frag)
         LOG.info(f"Processed {i} {frag}")
@@ -233,9 +240,8 @@ class DiAppSeismic3D(DiApp):
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
             name2 = self.__class__.__name__ + f" ({result_name})"
-            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.output_cubes_parameters)
+            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
-        self.output_cubes_parameters.update(res[0]._get_info())
         return res
 
     def generate_optimal_grid(self, c: DISeismicCube):
@@ -299,7 +305,7 @@ class DiAppSeismic3DMultiple(DiApp):
         self.out_names = out_names
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
-        self.output_cubes_parameters = {}
+        # self.out_data_params = {}
 
     def process_fragment(self, i, c_in, c_out, frag):
         def output_frag_if_not_none(w_out, f_out, f_coords):
@@ -345,9 +351,8 @@ class DiAppSeismic3DMultiple(DiApp):
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
             name2 = self.__class__.__name__ + f" ({result_name})"
-            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.output_cubes_parameters)
+            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
-        self.output_cubes_parameters.update(res[0]._get_info())
         return res
 
     def generate_optimal_grid(self):
@@ -417,8 +422,8 @@ class DiAppSeismic3D2D(DiApp):
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
         self.lines_in = []
-        self.output_cubes_parameters = {}
-        
+        # self.out_data_params = {}
+
     def process_fragment(self, i, c_in, c_out, frag):
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
@@ -472,9 +477,8 @@ class DiAppSeismic3D2D(DiApp):
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
             name2 = self.__class__.__name__ + f" ({result_name})"
-            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.output_cubes_parameters)
+            c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
-        self.output_cubes_parameters.update(res[0]._get_info())
         return res
 
     def open_input_lines(self):
@@ -488,7 +492,7 @@ class DiAppSeismic3D2D(DiApp):
             for result_name in self.out_names:
                 name = self.description[self.out_name_par] + f" ({p_in.name})"
                 name2 = self.__class__.__name__ + f" ({result_name})"
-                p_out = self.session.create_line_writer_as_other(p_in, name, name2)
+                p_out = self.session.create_line_writer_as_other(p_in, name, name2, **self.out_data_params)
                 res1.append(p_out)
             res.append(res1)
         return res
