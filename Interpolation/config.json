@@ -1,0 +1,27 @@
+{
+  "config": {
+    "application": "InterpolationZ",
+    "category": [ "Applications" ],
+    "parameters_template": [
+        { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms", "type": "ListView" },
+        { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
+        { "name": "New Name", "type": "LineEdit", "default": "InterpolationZ" },
+        {
+        "name": "intepolation",
+        "type": "ComboBox",
+        "title": "intepolation",
+        "default": "linear",
+        [linear,cubic spline,makima]
+      },
+  {
+        "name": "step",
+        "type": "SpinBox",
+        "title": "step [ms]",
+        "default": 2,
+        "min": 0.0001,
+        "max": 100
+      },
+      { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 8 }
+    ]
+  }
+}
