@@ -30,7 +30,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
             f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
             z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1])
             zs = np.linspace(0,f_in_tup[0].shape[-1],new_nz)
-            f_out = np.empty(f_in.shape[0], f_in.shape[1], new_nz)
+            f_out = np.empty((f_in.shape[0], f_in.shape[1], new_nz), dtype=f_in.dtype)
             if self.type_interpolation =="linear":
                 try:
                     f_out = interp1d(z,f_in,axis=-1)(zs)
