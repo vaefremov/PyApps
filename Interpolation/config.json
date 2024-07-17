@@ -16,7 +16,7 @@
   {
         "name": "step",
         "type": "DoubleSpinBox",
-        "title": "step [ms]",
+        "title": "step [mks]",
         "default": 2,
         "min": 0.0001,
         "max": 100

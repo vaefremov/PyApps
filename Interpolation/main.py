@@ -26,18 +26,19 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
             return (f_in_tup[0],)
         
         else:
-            f_in_tup[0]= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
+            new_nz = self.output_cubes_parameters["nz"]
+            f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
             z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1])
-            zs = np.linspace(0,f_in_tup[0].shape[-1],int(f_in_tup[0].shape[-1]/self.new_step))
-            f_out = np.empty(f_in_tup[0].shape)
+            zs = np.linspace(0,f_in_tup[0].shape[-1],new_nz)
+            f_out = np.empty(f_in.shape[0], f_in.shape[1], new_nz)
             if self.type_interpolation =="linear":
                 try:
-                    f_out = interp1d(z,f_in_tup[0],axis=-1)(zs)
+                    f_out = interp1d(z,f_in,axis=-1)(zs)
                 except:
                     LOG.info("***MemoryError: Linear interpolation***")
             elif self.type_interpolation =="cubic spline":
                 try:                 
-                    f_out = CubicSpline(z,f_in_tup[0],axis=-1)(zs)
+                    f_out = CubicSpline(z,f_in,axis=-1)(zs)
                 except:
                     LOG.info("***MemoryError: Сubic interpolation***")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
