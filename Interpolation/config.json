@@ -7,19 +7,19 @@
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
           { "name": "New Name", "type": "LineEdit", "default": "InterpolationZ" },
           {
-        "name": "intepolation",
+        "name": "interpolation",
         "type": "ComboBox",
-        "title": "intepolation",
+        "title": "interpolation",
         "default": "linear",
         "items": ["linear","cubic spline", "makima"]
       },
   {
         "name": "step",
         "type": "DoubleSpinBox",
-        "title": "step [mks]",
+        "title": "step [ms]",
         "default": 2,
-        "min": 0.0001,
-        "max": 100
+        "min": 0.1,
+        "max": 10
       },
       { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 8 }
     ]
