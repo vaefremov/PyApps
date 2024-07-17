@@ -317,7 +317,9 @@ class DiAppSeismic3DMultiple(DiApp):
             if f is None:
                 LOG.info(f"Skipped: {i} {frag}")
                 return i, "SKIP"
-        f_out = self.compute(tmp_f)
+        out_cube_params = c_out[0]._get_info() if len(c_out) else None
+        context = Context(in_cube_params=c_in[0]._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        f_out = self.compute(tmp_f, context=context)
         if DiApp.wrong_output_formats(tmp_f, f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(c_out, f_out):
