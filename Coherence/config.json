@@ -3,7 +3,7 @@
       "application": "Coherence",
       "category": [ "Applications" ],
       "parameters_template": [
-          { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms", "type": "ListView" },
+          { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms|SeismicDataGeoms3DCubes", "type": "ListView" },
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
           { "name": "New Name", "type": "LineEdit", "default": "Coherence" },
           {
