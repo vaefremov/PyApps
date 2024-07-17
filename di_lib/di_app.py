@@ -439,7 +439,9 @@ class DiAppSeismic3D2D(DiApp):
         if tmp_f is None:
             LOG.info(f"Skipped: {i} {frag_e=} {frag=}")
             return i, "SKIP"
-        f_out = self.compute((tmp_f,))
+        out_cube_params = c_out[0]._get_info() if len(c_out) else None
+        context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(c_out, f_out):
@@ -457,7 +459,9 @@ class DiAppSeismic3D2D(DiApp):
         if tmp_f is None:
             LOG.info(f"Skipped: {nm}")
             return nm, "SKIP"
-        f_out = self.compute((tmp_f,))
+        out_line_params = p_out[0]._get_info() if len(p_out) else None
+        context = Context(in_cube_params=None, in_line_params=p_in._get_info(), out_cube_params=None, out_line_params=out_line_params)
+        f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(p_out, f_out):
