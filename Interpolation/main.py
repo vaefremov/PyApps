@@ -43,6 +43,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
                     LOG.info("***MemoryError: Сubic interpolation***")
             else:
                 LOG.error(f"Unsupported interpolation type: {self.type_interpolation}")
+                raise RuntimeError(f"Unsupported interpolation type: {self.type_interpolation}")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
             return (f_out,)
 
