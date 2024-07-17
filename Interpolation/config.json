@@ -3,8 +3,8 @@
     "application": "InterpolationZ",
     "category": [ "Applications" ],
     "parameters_template": [
-        { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms", "type": "ListView" },
-        { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
+        { "name": "seismic_3d", "title": "Input Seismic3D Names", "inputDataType": "SeismicData3DGeoms", "type": "ListView" },
+        { "name": "seismic_2d", "title": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
         { "name": "New Name", "type": "LineEdit", "default": "InterpolationZ" },
         {
         "name": "intepolation",
