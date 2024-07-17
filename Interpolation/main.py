@@ -41,6 +41,8 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
                     f_out = CubicSpline(z,f_in,axis=-1)(zs)
                 except:
                     LOG.info("***MemoryError: Сubic interpolation***")
+            else:
+                LOG.error(f"Unsupported interpolation type: {self.type_interpolation}")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
             return (f_out,)
 
