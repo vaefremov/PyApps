@@ -31,12 +31,12 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
             z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1])
             zs = np.linspace(0,f_in_tup[0].shape[-1],new_nz)
             f_out = np.empty((f_in.shape[0], f_in.shape[1], new_nz), dtype=f_in.dtype)
-            if self.type_interpolation =="linear":
+            if self.type_interpolation == 0:
                 try:
                     f_out = interp1d(z,f_in,axis=-1)(zs)
                 except:
                     LOG.info("***MemoryError: Linear interpolation***")
-            elif self.type_interpolation =="cubic spline":
+            elif self.type_interpolation == 1:
                 try:                 
                     f_out = CubicSpline(z,f_in,axis=-1)(zs)
                 except:
