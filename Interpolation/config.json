@@ -1,11 +1,11 @@
 {
     "config": {
-      "application": "InterpolationZ",
+      "application": "Interpolation",
       "category": [ "Applications" ],
       "parameters_template": [
           { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms|SeismicDataGeoms3DCubes", "type": "ListView" },
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
-          { "name": "New Name", "type": "LineEdit", "default": "InterpolationZ" },
+          { "name": "New Name", "type": "LineEdit", "default": "Interpolation" },
           {
         "name": "interpolation",
         "type": "ComboBox",

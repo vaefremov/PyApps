@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from scipy.interpolate import CubicSpline,interp1d
 from di_lib import di_app
+from di_lib.di_app import Context
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -17,8 +18,9 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
         # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
         self.type_interpolation = self.description["interpolation"]
         self.new_step = self.description["step"] * 1000.0 # input step is in ms, re-calculating to us
+        print(self.type_interpolation)
        
-    def compute(self, f_in_tup: Tuple[np.ndarray]) -> Tuple:
+    def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
         if (f_in_tup[0]>= 0.1*MAXFLOAT).all() or (f_in_tup[0] == np.inf).all():
             LOG.info("***EMPTY***")
@@ -26,7 +28,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
             return (f_in_tup[0],)
         
         else:
-            print('interp',self.type_interpolation)
+            #print(self.type_interpolation)
             new_nz = self.output_cubes_parameters["nz"]
             f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
             z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1])
