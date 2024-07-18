@@ -26,6 +26,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
             return (f_in_tup[0],)
         
         else:
+            print('interp',self.type_interpolation)
             new_nz = self.output_cubes_parameters["nz"]
             f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
             z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1])
