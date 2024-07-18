@@ -18,7 +18,6 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
         # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
         self.type_interpolation = self.description["interpolation"]
         self.new_step = self.description["step"] * 1000.0 # input step is in ms, re-calculating to us
-        print(self.type_interpolation)
        
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
@@ -28,12 +27,11 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
             return (f_in_tup[0],)
         
         else:
-            #print(self.type_interpolation)
-            new_nz = self.output_cubes_parameters["nz"]
+            new_nz = context.out_cube_params["nz"]
             f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
-            z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1])
-            zs = np.linspace(0,f_in_tup[0].shape[-1],new_nz)
-            f_out = np.empty((f_in.shape[0], f_in.shape[1], new_nz), dtype=f_in.dtype)
+            z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1], dtype=f_in_tup[0].dtype)
+            zs = np.linspace(0,f_in_tup[0].shape[-1],new_nz, dtype=f_in_tup[0].dtype)
+            f_out = np.zeros((f_in.shape[0], f_in.shape[1], new_nz), dtype=f_in_tup[0].dtype)
             if self.type_interpolation == 0:
                 try:
                     f_out = interp1d(z,f_in,axis=-1)(zs)
@@ -48,6 +46,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
                 LOG.error(f"Unsupported interpolation type: {self.type_interpolation}")
                 raise RuntimeError(f"Unsupported interpolation type: {self.type_interpolation}")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
+
             return (f_out,)
 
 if __name__ == "__main__":
