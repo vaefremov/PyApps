@@ -7,6 +7,7 @@ import numpy as np
 import time
 
 from di_lib import di_app
+from di_lib.di_app import Context
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
         self.min_window = self.description["window"]
         self.max_shift = self.description["shift"]
 
-    def compute(self, f_in_tup: Tuple[np.ndarray]) -> Tuple:
+    def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
         f_in = f_in_tup[0]
         if len(f_in.shape) == 3:
