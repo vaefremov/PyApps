@@ -28,13 +28,13 @@ def cubic_interpolate(y ,z, zs):
 class InterpolationZ (di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
         super().__init__(in_name_par="Input Seismic3D Names", in_line_names_par="Input Seismic2D Names", 
-                out_name_par="New Name", out_names=["Interpolation1"])
+                out_name_par="New Name", out_names=["Interpolation"])
         
         # Input datasets names are converted to the agreed upon format 
         # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
         self.type_interpolation = self.description["interpolation"]
         self.new_step = self.description["step"] * 1000.0 # input step is in ms, re-calculating to us
-        self.out_data_params["step"] = self.new_step
+        self.out_data_params["z_step"] = self.new_step
        
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
