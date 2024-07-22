@@ -97,7 +97,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
                 sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
                 newTraces[indC,self.min_window + self.max_shift:f_in.shape[1] - self.min_window-2 * self.max_shift + self.max_shift] = sig
         else:
-            raise Exception
+            raise ValueError(f"Unsupported input shape: {f_in.shape}")
         # np.nan_to_num(newTraces, nan=MAXFLOAT, copy=False)
         np.nan_to_num(newTraces, nan=0.0, copy=False)
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
