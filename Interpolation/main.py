@@ -1,6 +1,3 @@
-import sys
-sys.path.append(r"C:\Users\ИТС\PyApps")
-
 from typing import Optional, Tuple
 import logging
 import numpy as np
