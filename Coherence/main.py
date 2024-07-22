@@ -1,13 +1,10 @@
-import typing
 from typing import Optional, Tuple
 
 import logging
-import copy
 import numpy as np
 import time
 
 from di_lib import di_app
-from di_lib.di_app import Context
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -65,13 +62,13 @@ def nokta(a,frm):
 
 class Coherence(di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="Input Seismic3D Name", in_line_names_par="Input Seismic2D Names",
+        super().__init__(in_name_par="Input Seismic3D Names", in_line_names_par="Input Seismic2D Names",
                 out_name_par="New Name", out_names=["Coherence"])
         
         self.min_window = self.description["window"]
         self.max_shift = self.description["shift"]
 
-    def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
+    def compute(self, f_in_tup: Tuple[np.ndarray]) -> Tuple:
         tm_start = time.time()
         f_in = f_in_tup[0]
         if len(f_in.shape) == 3:
@@ -81,24 +78,28 @@ class Coherence(di_app.DiAppSeismic3D2D):
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
                 for j in range(1,f_in.shape[1]-1):
-                    indC = [i,j]
-                    indAll = nokta(indC,frm)
-                    sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
-                    newTraces[indC[0],indC[1],self.min_window + self.max_shift:f_in.shape[2] - self.min_window-2 * self.max_shift + self.max_shift] = sig
-                    #break
+                    if np.isinf(sum(f_in[i,j,:])) == True:
+                        continue
+                    else:
+                        indC = [i,j]
+                        indAll = nokta(indC,frm)
+                        sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
+                        newTraces[indC[0],indC[1],self.min_window + self.max_shift:f_in.shape[2] - self.min_window-2 * self.max_shift + self.max_shift] = sig
         elif len(f_in.shape) == 2:
             frm = '2d'
             newTraces = np.zeros(shape=(f_in.shape[0], f_in.shape[1]), dtype=np.float32)
             MAXFLOAT = float(np.finfo(np.float32).max)
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
-                indC = i
-                indAll = nokta(indC,frm)
-                sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
-                newTraces[indC,self.min_window + self.max_shift:f_in.shape[1] - self.min_window-2 * self.max_shift + self.max_shift] = sig
+                if np.isinf(sum(f_in[i,:])) == True:
+                    continue
+                else:
+                    indC = i
+                    indAll = nokta(indC,frm)
+                    sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
+                    newTraces[indC,self.min_window + self.max_shift:f_in.shape[1] - self.min_window-2 * self.max_shift + self.max_shift] = sig
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
-        # np.nan_to_num(newTraces, nan=MAXFLOAT, copy=False)
         np.nan_to_num(newTraces, nan=0.0, copy=False)
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
         return (newTraces,)
