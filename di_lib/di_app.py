@@ -99,6 +99,7 @@ class DiApp(metaclass=abc.ABCMeta):
     def margin(self):
         if self._margin is None:
             self._margin = self.description.get("margin", 0)
+            LOG.info(f"Margin set to {self._margin}")
         return self._margin
 
     @property
