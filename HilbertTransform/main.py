@@ -6,6 +6,7 @@ from multiprocessing import Pool
 import time
 
 from di_lib import di_app
+from di_lib.di_app import Context
 # from di_lib import seismic_cube
 
 import numpy as np
@@ -58,7 +59,7 @@ class Hilbert(di_app.DiAppSeismic3D):
         self.out_flags = [self.compute_amplitude, self.compute_frequency, self.compute_phase]
         self.out_names = [i[0] for i in zip(out_names, self.out_flags) if i[1]]
 
-    def compute(self, f_in_tup: Tuple[np.ndarray]) -> Tuple:
+    def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         f_in = f_in_tup[0]
         tmp_f = taper_fragment(f_in, self.border_correction)
         if self.cube_in is not None:

@@ -5,6 +5,7 @@ import numpy as np
 import numexpr as ne
 
 from di_lib import di_app
+from di_lib.di_app import Context
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class SeismicCalculation(di_app.DiAppSeismic3DMultiple):
        
         LOG.info(f"\n ***FORMULA*** \nOriginal formula: {self.description['formula']} \nFinal formula: {self.formula}")
        
-    def compute(self, f_in_tup: Tuple[np.ndarray]) -> Tuple:
+    def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
         if (f_in_tup[0]>= 0.1*MAXFLOAT).all() or (f_in_tup[0] == np.inf).all():
             LOG.info("***EMPTY***")
