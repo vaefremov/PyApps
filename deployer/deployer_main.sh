@@ -3,8 +3,10 @@
 
 BIN=$(readlink -f $(dirname $0))
 
-export REPO="/tmp/efremov/Repo1"
-export DEPLOY_TO="/tmp/efremov/JobApps"
+# export REPO="/tmp/efremov/Repo1"
+export REPO="/data/DI_apps/DbHelper/Tmp/PyApps"
+# export DEPLOY_TO="/tmp/efremov/JobApps"
+export DEPLOY_TO="/data/DI_apps/DbHelper/JobApps"
 export ATTIC="$DEPLOY_TO/../Attic"
 
 
