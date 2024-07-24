@@ -1,9 +1,9 @@
-#!/bin/bash -x
+#!/bin/bash
 # Main script of deployer
 
 BIN=$(readlink -f $(dirname $0))
 
-export REPO="/home/efremov/Projects/Repo1"
+export REPO="/tmp/efremov/Repo1"
 export DEPLOY_TO="/tmp/efremov/JobApps"
 export ATTIC="$DEPLOY_TO/../Attic"
 
@@ -14,6 +14,10 @@ pull_check_updates()
 
     PREV_VER=$(git rev-parse HEAD)
     git pull >/dev/null
+
+    CUR_VER=$(git rev-parse HEAD)
+
+    [ "$PREV_VER" == "$CUR_VER" ] && exit 0
 
     FILES=$(git diff --name-only $PREV_VER origin/master)
 
@@ -32,6 +36,10 @@ do
     echo $(date) "di_lib deployed"
   else
     $BIN/deploy_app.sh $a
-    echo $(date) "App $a deployed"
+    if [ $? -eq 0 ]; then
+      echo $(date) "App $a deployed"
+    else
+      echo "Error in deployment of $a"
+    fi
   fi
 done
