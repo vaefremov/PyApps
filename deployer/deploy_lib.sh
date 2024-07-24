@@ -1,10 +1,10 @@
-#!/bin/bash -x
+#!/bin/bash
 # Deploy di_lib library
 
 APP="di_lib"
 
-REPO=${REPO:?"/home/efremov/Projects/Repo1"}
-DEPLOY_TO=${DEPLOY_TO:?"/tmp/efremov/JobApps"}/..
+REPO=${REPO:?"Repo not set"}
+DEPLOY_TO=${DEPLOY_TO:?"Deployment target not set"}/..
 ATTIC="$DEPLOY_TO/Attic"
 
 SUFFIX=$(date +"%Y%m%d%H%M%S")

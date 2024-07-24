@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 APP=${1:?'App argument not set'}
 
