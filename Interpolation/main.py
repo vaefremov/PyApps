@@ -15,7 +15,7 @@ def linear_interpolate(y, z, zs):
         y_out = interp1d(z[good_idx], y[good_idx], axis=-1, bounds_error=False )(zs)
         return y_out
     except:
-        return y
+        return np.full(zs.shape[-1],np.nan)
             
 def cubic_interpolate(y ,z, zs):
     good_idx = np.where( np.isfinite(y) )
@@ -23,7 +23,7 @@ def cubic_interpolate(y ,z, zs):
         y_out = CubicSpline(z[good_idx], y[good_idx], axis=-1, extrapolate=False )(zs)
         return y_out
     except:
-        return y
+        return np.full(zs.shape[-1],np.nan)
 
 class InterpolationZ (di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
