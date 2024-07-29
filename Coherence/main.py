@@ -75,7 +75,6 @@ class Coherence(di_app.DiAppSeismic3D2D):
         if len(f_in.shape) == 3:
             frm = '3d'
             newTraces = np.zeros(shape=(f_in.shape[0], f_in.shape[1], f_in.shape[2]), dtype=np.float32)
-            MAXFLOAT = float(np.finfo(np.float32).max)
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
                 for j in range(1,f_in.shape[1]-1):
@@ -89,7 +88,6 @@ class Coherence(di_app.DiAppSeismic3D2D):
         elif len(f_in.shape) == 2:
             frm = '2d'
             newTraces = np.zeros(shape=(f_in.shape[0], f_in.shape[1]), dtype=np.float32)
-            MAXFLOAT = float(np.finfo(np.float32).max)
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
                 if np.isinf(sum(f_in[i,:])) == True:
@@ -101,7 +99,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
                     newTraces[indC,self.min_window + self.max_shift:f_in.shape[1] - self.min_window-2 * self.max_shift + self.max_shift] = sig
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
-        np.nan_to_num(newTraces, nan=0.0, copy=False)
+        np.nan_to_num(newTraces, nan=MAXFLOAT, copy=False)
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
         return (newTraces,)
 
