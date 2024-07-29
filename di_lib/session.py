@@ -78,8 +78,8 @@ class DISession:
             return resp_j
 
 
-    def get_line(self, name: str, attr_name: str) -> DISeismicLine:
-        line = DISeismicLine(self.project_id, name, attr_name)
+    def get_line(self, geometry_name: str, name: str, attr_name: str) -> DISeismicLine:
+        line = DISeismicLine(self.project_id, geometry_name, name, attr_name)
         line.server_url = self.server_url
         line.token = self.token
         line._read_info()

@@ -11,7 +11,7 @@ MAXFLOAT = 3.40282347e+38 ## stands for undefined values of parameters
 MAXFLOAT09 = 0.9*3.40282347e+38 ## stands for undefined values of parameters
 
 class DISeismicLine:
-    def __init__(self, project_id: int, name: str, name2: str) -> None:
+    def __init__(self, project_id: int, geometry_name: str, name: str, name2: str) -> None:
         self.project_id = project_id
         self.server_url = ""
         self.token = ""
@@ -21,12 +21,14 @@ class DISeismicLine:
         self.data_start = None
         self.name = name
         self.name2 = name2
+        self.geometry_name = geometry_name
+        self.geometry_id = None
         self.line_id = None
         self.geometry = []
         self.cdps = []
         
     def __repr__(self):
-        return f"DISeismicLine: {self.line_id} {self.name} {self.name2}"
+        return f"DISeismicLine: {self.line_id=} {self.geometry_name=} {self.name=} {self.name2=}"
 
     def _read_info(self) -> None:
         with requests.get(f"{self.server_url}/seismic_2d/list/{self.project_id}/") as resp:
@@ -35,8 +37,9 @@ class DISeismicLine:
                 return None
             resp_j = json.loads(resp.content)
             for i in resp_j:
-                if (i["name"] == self.name) and (i["name2"] == self.name2):
+                if (i["geometry_name"] == self.geometry_name) and (i["name"] == self.name) and (i["name2"] == self.name2):
                     self.line_id = i["id"]
+                    self.geometry_id = i["geometry_id"]
                     LOG.debug(f"{i}")
                     self.n_samples = i["nz"]
                     self.time_step = i["z_step"]
@@ -56,6 +59,8 @@ class DISeismicLine:
 
     def _get_info(self):
         i = {
+            "geometry_name": self.geometry_name,
+            "geometry_id": self.geometry_id,
             "name": self.name,
             "name2": self.name2,
             "nz": self.n_samples,
@@ -84,10 +89,13 @@ class DISeismicLine:
 
 class DISeismicLineWriter(DISeismicLine):
     def __init__(self, project_id: int, name: str, name2: str) -> None:
-        super().__init__(project_id, name, name2)
+        super().__init__(project_id, None, name, name2)
 
     def _init_from_info(self, i) -> None:
         LOG.debug(f"{i}")
+        self.line_id = i["id"]
+        self.geometry_id = i["geometry_id"]
+        self.geometry_name = i["geometry_name"]
         self.n_samples = i["nz"]
         self.time_step = i["z_step"]
         self.domain = i["domain"]
@@ -96,7 +104,7 @@ class DISeismicLineWriter(DISeismicLine):
         self.cdps = i["cdps"]
 
     def _create(self):
-        url = f"{self.server_url}/seismic_2d/create/{self.project_id}/"
+        url = f"{self.server_url}/seismic_2d/geometry/new_line/{self.geometry_id}/"
         res_status = 200
         res_id = -1
         try:
