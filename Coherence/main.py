@@ -36,8 +36,11 @@ def corelater(Traces1,shift,window,p,indC,frm):
     if frm == '3d':
         a = Traces1[indC[0],indC[1],:]
         b = Traces1[p[:,0],p[:,1],:]
-        rows=(np.where(np.isinf(b)[:,0]!=True))
-        b = b[rows]
+        rows=(np.where(np.isinf(b)[:,0]!=True & (b[:,0] != MAXFLOAT)))
+        if len(rows[0]) == 0:
+            b = np.full((8,Traces1.shape[2]), np.nan)
+        else:
+            b = b[rows]
     else:
         a = Traces1[indC,:]
         b = Traces1[p,:]
