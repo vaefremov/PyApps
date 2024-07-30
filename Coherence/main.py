@@ -18,7 +18,6 @@ def vec_corrcoef(X, Y, axis=1):
     Ym = Y - np.mean(Y, axis=axis, keepdims=True)
     n = np.mean(Xm * Ym, axis=axis)
     d = np.std(X ,axis=axis)*np.std(Ym,axis=axis)
-    #d = np.sqrt(np.sum((X - Xm)**2, axis=axis) * np.sum((Y - Ym)**2, axis=axis))
     return n / d
 
 def corr(x,data,window,shift):
@@ -37,9 +36,13 @@ def corelater(Traces1,shift,window,p,indC,frm):
     if frm == '3d':
         a = Traces1[indC[0],indC[1],:]
         b = Traces1[p[:,0],p[:,1],:]
+        rows=(np.where(np.isinf(b)[:,0]!=True))
+        b = b[rows]
     else:
         a = Traces1[indC,:]
         b = Traces1[p,:]
+        rows=(np.where(np.isinf(b)[:,0]!=True))
+        b = b[rows]
 
     return corr(a,b,window,shift)
 
@@ -78,7 +81,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
                 for j in range(1,f_in.shape[1]-1):
-                    if np.isinf(sum(f_in[i,j,:])) == True:
+                    if np.isinf(f_in[i,j,:]).any() == True:
                         continue
                     else:
                         indC = [i,j]
@@ -90,7 +93,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
             newTraces = np.zeros(shape=(f_in.shape[0], f_in.shape[1]), dtype=np.float32)
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
-                if np.isinf(sum(f_in[i,:])) == True:
+                if np.isinf(f_in[i,:]).any() == True:
                     continue
                 else:
                     indC = i
