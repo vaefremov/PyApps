@@ -1,51 +1,62 @@
  {
     "config": {
-      "application": "DipAzimuth",
-      "application_ru_RU": "Погружение и азимут",
+      "application": "Hilbert, Dip, Azimuth",
+      "application_ru_RU": "Гильберт преобразования, Погружение и Азимут",
       "category": [
         "Applications"
       ],
       "parameters_template": [
-        { "name": "result_name", "title": "New Seismic Data Name", "type": "LineEdit", "default": "Hilbert" },
+        { "name": "result_name",
+          "title": "Result name",
+          "title_ru_RU": "Имя результата",
+          "type": "LineEdit",
+          "default": "Hilbert" },
         {
           "name": "seismic_2d",
           "type": "ListView",
           "inputDataType": "SeismicData2DGeoms",
-          "title": "Input 2D"
+          "title": "Select input 2D",
+          "title_ru_RU": "Выберите профили 2Д"
         },
         {
           "name": "seismic_3d",
           "type": "ListView",
-          "inputDataType": "SeismicData3DGeoms",
-          "title": "Input 3D"
+          "inputDataType": "SeismicDataGeoms3DCubes",
+          "title": "Select input 3D",
+          "title_ru_RU": "Выберите кубы 3Д"
         },
         {
           "name": "inst_amplitude",
           "title": "Instantaneous amplitude",
+          "title_ru_RU": "Мгновенная амплитуда",
           "type": "CheckBox",
           "checked": true
         },
         {
           "name": "inst_frequency",
           "title": "Instantaneous frequency",
+          "title_ru_RU": "Мгновенная частота",
           "type": "CheckBox",
           "checked": true
         },
         {
           "name": "phase",
-          "title": "Phase",
+          "title": "Instantaneous phase",
+          "title_ru_RU": "Мгновенная фаза",
           "type": "CheckBox",
           "checked": true
         },
         {
           "name": "azimuth",
           "title": "Azimuth",
+          "title_ru_RU": "Азимут",
           "type": "CheckBox",
           "checked": true
         },
         {
           "name": "dip",
           "title": "Dip",
+          "title_ru_RU": "Погружение",
           "type": "CheckBox",
           "checked": true
         },
@@ -53,8 +64,8 @@
           "name": "min_frequency",
           "type": "DoubleSpinBox",
           "title": "Minimum frequency",
-          "default": 0,
-          "min": 0,
+          "default": 5,
+          "min": 1,
           "max": 500
         },
         {
@@ -62,7 +73,7 @@
           "type": "DoubleSpinBox",
           "title": "Maximum frequency",
           "default": 100,
-          "min": 0,
+          "min": 10,
           "max": 500
         },
         {
@@ -71,8 +82,14 @@
           "title": "Border correction (samples)",
           "default": 20,
           "min": 0,
-          "max": 500
-        }
+          "max": 100
+        },
+        { 
+          "name": "Threads Count", 
+          "type": "SpinBox", 
+          "min": 1, 
+          "max": 100, 
+          "default": 16}
       ]
     },
     "name": "HilbertTransform"
