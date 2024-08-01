@@ -16,7 +16,7 @@
         {
           "name": "seismic_3d",
           "type": "ListView",
-          "inputDataType": "SeismicData3DGeoms",
+          "inputDataType": "SeismicDataGeoms3DCubes",
           "title": "Input 3D"
         },
         {

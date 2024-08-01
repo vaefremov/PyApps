@@ -2,7 +2,7 @@
     "program_name": "Example01",
     "job_description": {
         "Input Seismic3D Name": ["cube\nSeismic_section"],
-        "New Seismic3D Name": "new name",
+        "New Seismic3D Name": "new name 1",
         "Threads Count": 10
     },
     "project_id": 3344276

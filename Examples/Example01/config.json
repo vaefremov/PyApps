@@ -1,9 +1,9 @@
 {
     "config": {
-      "application": "Example02_async",
+      "application": "Example01",
       "category": [ "Applications" ],
       "parameters_template": [
-          { "name": "Input Seismic3D Name", "inputDataType": "SeismicData3DGeoms", "type": "LineEdit", "enabled": false },
+          { "name": "Input Seismic3D Name", "inputDataType": "SeismicDataGeoms3DCubes", "type": "LineEdit", "enabled": false },
           { "name": "New Seismic3D Name", "type": "LineEdit", "default": "Seismic_section" },
           { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 1000, "default": 5 }
       ]

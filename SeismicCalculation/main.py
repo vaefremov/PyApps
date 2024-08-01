@@ -32,9 +32,9 @@ class SeismicCalculation(di_app.DiAppSeismic3DMultiple):
         LOG.info(f"\n ***FORMULA*** \nOriginal formula: {self.description['formula']} \nFinal formula: {self.formula}")
        
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
-        LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
+        LOG.debug(f"Computing {[f_in.shape for f_in in f_in_tup]}")
         if (f_in_tup[0]>= 0.1*MAXFLOAT).all() or (f_in_tup[0] == np.inf).all():
-            LOG.info("***EMPTY***")
+            LOG.debug("***EMPTY***")
             np.nan_to_num(f_in_tup[0], inf=MAXFLOAT, copy=False)
             return (f_in_tup[0],)
         
