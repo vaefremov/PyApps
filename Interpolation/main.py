@@ -24,6 +24,14 @@ def cubic_interpolate(y ,z, zs):
         return y_out
     except:
         return np.full(zs.shape[-1],np.nan)
+    
+def akima_interpolate(y, z, zs):
+    good_idx = np.where( np.isfinite(y) )
+    try:
+        y_out = Akima1DInterpolator(z[good_idx], y[good_idx], axis=-1)(zs)
+        return y_out
+    except:
+        return np.full(zs.shape[-1],np.nan)
 
 class InterpolationZ (di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
@@ -48,6 +56,9 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
         elif self.type_interpolation == "cubic spline":              
             f_out = np.apply_along_axis(cubic_interpolate, -1, f_in, z, zs)
             f_out  = f_out.astype('float32')
+        elif self.type_interpolation == 'akima':
+            f_out = np.apply_along_axis(akima_interpolate, -1, f_in, z, zs)
+            f_out = f_out.astype('float32')
         else:
             LOG.error(f"Unsupported interpolation type: {self.type_interpolation}")
             raise RuntimeError(f"Unsupported interpolation type: {self.type_interpolation}")
