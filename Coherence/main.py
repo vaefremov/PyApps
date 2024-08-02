@@ -36,19 +36,19 @@ def corelater(Traces1,shift,window,p,indC,frm):
     if frm == '3d':
         a = Traces1[indC[0],indC[1],:]
         b = Traces1[p[:,0],p[:,1],:]
-        rows=(np.where(np.isinf(b)[:,0]!=True & (b[:,0] != 0.1*MAXFLOAT)))
-        if len(rows[0]) == 0:
+        mask = np.all(np.isinf(b), axis=1) | np.all(b >= 0.1 * MAXFLOAT, axis=1)
+        if mask.all() == True:
             b = np.full((8,Traces1.shape[2]), np.nan)
         else:
-            b = b[rows]
+            b = b[~mask]
     else:
         a = Traces1[indC,:]
         b = Traces1[p,:]
-        rows=(np.where(np.isinf(b)[:,0]!=True & (b[:,0] != MAXFLOAT)))
-        if len(rows[0]) == 0:
+        mask = np.all(np.isinf(b), axis=1) | np.all(b >= 0.1 * MAXFLOAT, axis=1)
+        if mask.all() == True:
             b = np.full((2,Traces1.shape[1]), np.nan)
         else:
-            b = b[rows]
+            b = b[~mask]
 
     return corr(a,b,window,shift)
 
