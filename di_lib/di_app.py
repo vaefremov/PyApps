@@ -222,6 +222,7 @@ class DiAppSeismic3D(DiApp):
             return i, "SKIP"
         out_cube_params = c_out[0]._get_info() if len(c_out) else None
         context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        context.in_cube_params["chunk"] = frag
         f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
@@ -320,6 +321,7 @@ class DiAppSeismic3DMultiple(DiApp):
                 return i, "SKIP"
         out_cube_params = c_out[0]._get_info() if len(c_out) else None
         context = Context(in_cube_params=c_in[0]._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        context.in_cube_params["chunk"] = frag
         f_out = self.compute(tmp_f, context=context)
         if DiApp.wrong_output_formats(tmp_f, f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
@@ -442,6 +444,7 @@ class DiAppSeismic3D2D(DiApp):
             return i, "SKIP"
         out_cube_params = c_out[0]._get_info() if len(c_out) else None
         context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        context.in_cube_params["chunk"] = frag
         f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
@@ -490,7 +493,8 @@ class DiAppSeismic3D2D(DiApp):
 
     def open_input_lines(self):
         names = [i.split("\n") for i in self.description[self.in_line_names_par]]
-        return [self.session.get_line(n[0], n[1]) for n in names]
+        # Input profiles names are [geom, name, name2]
+        return [self.session.get_line(n[0], n[1], n[2]) for n in names]
 
     def create_output_lines(self, lines_in: List[DISeismicLine]):
         res = []
