@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 import logging
 import numpy as np
-from scipy.interpolate import CubicSpline,interp1d
+from scipy.interpolate import CubicSpline,interp1d,Akima1DInterpolator
 from di_lib import di_app
 from di_lib.di_app import Context
 
