@@ -38,7 +38,7 @@ def corelater(Traces1,shift,window,p,indC,frm):
         b = Traces1[p[:,0],p[:,1],:]
         rows=(np.where(np.isinf(b)[:,0]!=True & (b[:,0] != 0.1*MAXFLOAT)))
         if len(rows[0]) == 0:
-            b = np.full((8,Traces1.shape[2]), MAXFLOAT)
+            b = np.full((8,Traces1.shape[2]), np.nan)
         else:
             b = b[rows]
     else:
@@ -46,7 +46,7 @@ def corelater(Traces1,shift,window,p,indC,frm):
         b = Traces1[p,:]
         rows=(np.where(np.isinf(b)[:,0]!=True & (b[:,0] != MAXFLOAT)))
         if len(rows[0]) == 0:
-            b = np.full((2,Traces1.shape[1]), MAXFLOAT)
+            b = np.full((2,Traces1.shape[1]), np.nan)
         else:
             b = b[rows]
 
@@ -88,7 +88,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
             for i in range(1,f_in.shape[0]-1):
                 for j in range(1,f_in.shape[1]-1):
                     if np.isinf(f_in[i,j,:]).all() == True:
-                        continue
+                        f_in[i,j,:] = np.nan
                     else:
                         indC = [i,j]
                         indAll = nokta(indC,frm)
@@ -100,7 +100,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
             newTraces[:] = np.nan
             for i in range(1,f_in.shape[0]-1):
                 if np.isinf(f_in[i,:]).all() == True:
-                    continue
+                    f_in[i,:] = np.nan
                 else:
                     indC = i
                     indAll = nokta(indC,frm)
