@@ -14,9 +14,12 @@ class Example03(di_app.DiAppSeismic3D2D):
                 out_name_par="result_name", out_names=["Example03 1", "Example03 2"])
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
-        # LOG.info(f"{self.cube_in} DT: {self.cube_in.time_step if self.cube_in else None}")
         f_in = f_in_tup[0]
         LOG.info(f"Computing {f_in.shape}")
+        if len(f_in.shape) == 3: 
+            # Cubes
+            LOG.info(f"In cube info: {context.in_cube_params}")
+            LOG.info(f"Input/output chunk: {context.in_cube_params['chunk']}")
         return (f_in, f_in)
 
 if __name__ == "__main__":
