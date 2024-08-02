@@ -28,7 +28,7 @@ def cubic_interpolate(y ,z, zs):
 def akima_interpolate(y, z, zs):
     good_idx = np.where( np.isfinite(y) )
     try:
-        y_out = Akima1DInterpolator(z[good_idx], y[good_idx], axis=-1)(zs)
+        y_out = Akima1DInterpolator(z[good_idx], y[good_idx], axis=-1, extrapolate=False)(zs)
         return y_out
     except:
         return np.full(zs.shape[-1],np.nan)
