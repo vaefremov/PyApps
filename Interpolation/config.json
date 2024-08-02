@@ -11,7 +11,7 @@
         "type": "ComboBox",
         "title": "interpolation",
         "default": "linear",
-        "items": ["linear","cubic spline"]
+        "items": ["linear","cubic spline","akima"]
       },
   {
         "name": "step",
