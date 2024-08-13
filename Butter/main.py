@@ -3,6 +3,8 @@ import logging
 from scipy.interpolate import CubicSpline,interp1d,Akima1DInterpolator
 from di_lib import di_app
 from di_lib.di_app import Context
+import time
+
 import numpy as np
 from scipy.fft import rfftn
 from scipy import signal
@@ -20,18 +22,21 @@ class Butter (di_app.DiAppSeismic3D2D):
         # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
         self.lowFreq = self.description["lowFreq"]
         self.step = self.description["step"] # input step is in ms, re-calculating to us
-	self.kol_step = self.description["kol_step"]
+        self.kol_step = self.description["kol_step"]
+        self.z_step = self.description["z_step"]
         self.out_data_params["z_step"] = self.description["z_step"]
        
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
+        tm_start = time.time()
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
         new_nz = context.out_cube_params["nz"]
         #f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
-        for i in range(lowFreq, lowFreq + kol_step + step + 2, step):
-    		b, a = signal.butter(4, [i, i+1], fs=fs, btype='band')
-    		f_out = signal.lfilter(b, a, f_in)
+        fs = 1e6/self.z_step
+        for i in range(self.lowFreq, self.lowFreq + self.kol_step + self.step + 2, self.step):
+                b, a = signal.butter(4, [i, i+1], fs=fs, btype='band')
+                f_out = signal.lfilter(b, a, f_in)
         np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
-	LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
+        LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
 
         return (f_out,)
 
