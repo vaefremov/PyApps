@@ -24,7 +24,7 @@ class Butter (di_app.DiAppSeismic3D2D):
         self.step = self.description["step"] # input step is in ms, re-calculating to us
         self.kol_step = self.description["kol_step"]
         #self.z_step = self.description["z_step"]
-        self.out_data_params["z_step"] = self.description["step"]
+        #self.out_data_params["z_step"] = self.description["step"]
        
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
