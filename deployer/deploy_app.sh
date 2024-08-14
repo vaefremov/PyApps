@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 APP=${1:?'App argument not set'}
 
@@ -21,4 +21,4 @@ then
 fi
 
 cp -r $REPO/$APP $DEPLOY_TO/
-chmod +x $DEPLOY_TO/$APP/app.sh
+chmod +x $DEPLOY_TO/$(basename $APP)/app.sh
