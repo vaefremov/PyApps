@@ -35,7 +35,7 @@ class Butter (di_app.DiAppSeismic3D2D):
         fs = 1e6/z_step
         for i in range(self.lowFreq, self.lowFreq + self.kol_step + self.step + 2, self.step):
                 b, a = signal.butter(4, [i, i+1], fs=fs, btype='band')
-                f_out = signal.lfilter(b, a, f_in)
+                f_out = signal.lfilter(b, a, f_in_tup)
         np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
 
