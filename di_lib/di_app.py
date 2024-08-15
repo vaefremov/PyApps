@@ -419,9 +419,10 @@ class DiAppSeismic3DMultiple(DiApp):
 class DiAppSeismic3D2D(DiApp):
     """Process 3D cube and multiple seismic lines"""
 
-    def __init__(self, in_name_par: str, in_line_names_par: str, out_name_par: str, out_names: List[str]) -> None:
+    def __init__(self, in_name_par: str, in_line_geometries_par: str, in_line_names_par: str, out_name_par: str, out_names: List[str]) -> None:
         super().__init__()
         self.in_name_par = in_name_par
+        self.in_line_geometries_par = in_line_geometries_par
         self.in_line_names_par = in_line_names_par
         self.out_names = out_names
         self.out_name_par = out_name_par
@@ -492,7 +493,10 @@ class DiAppSeismic3D2D(DiApp):
         return res
 
     def open_input_lines(self):
-        names = [i.split("\n") for i in self.description[self.in_line_names_par]]
+        # names = [i.split("\n") for i in self.description[self.in_line_names_par]]
+        geometries = self.description[self.in_line_geometries_par]
+        line_data_names = self.description[self.in_line_names_par]
+        names = [(g,*n.split("\n")) for g in geometries for n in line_data_names]
         # Input profiles names are [geom, name, name2]
         return [self.session.get_line(n[0], n[1], n[2]) for n in names]
 
