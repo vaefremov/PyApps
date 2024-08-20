@@ -13,7 +13,8 @@ LOG = logging.getLogger(__name__)
 
 class Example03(di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="seismic_3d", in_line_names_par="seismic_2d",
+        super().__init__(in_name_par="seismic_3d", 
+                in_line_geometries_par="Seismic2DGeometries", in_line_names_par="seismic_2d",
                 out_name_par="result_name", out_names=["Example03 1", "Example03 2"])
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
