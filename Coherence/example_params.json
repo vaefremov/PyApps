@@ -1,4 +1,4 @@
-{
+[{
     "program_name": "Coherence",
     "job_description": {
         "Input Seismic3D Name": ["cube\nSeismic_section"],
@@ -9,4 +9,33 @@
         "window": 15
     },
     "project_id": 19636343
-}
+},
+{
+    "owner": "ant",
+    "project_id": 19637517,
+    "id": 19783724,
+    "in_progress": false,
+    "status_code": 1,
+    "ts": "2024-08-14T15:43:48.517994",
+    "program_name": "Coherence",
+    "job_description": {
+      "Input Seismic2D Names": [
+        "SEIS_DATA\nImported",
+        "SEIS_DATA2\nImported"
+      ],
+      "Input Seismic3D Names": [],
+      "New Name": "Coherence",
+      "Seismic2DGeometries": [
+        "070133",
+        "070135",
+        "070105",
+        "070101"
+      ],
+      "Threads Count": 8,
+      "margin": 1,
+      "shift": 1,
+      "window": 15
+    },
+    "status_message": "OK"
+  }
+]
