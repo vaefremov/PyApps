@@ -3,8 +3,9 @@
       "application": "Butter",
       "category": [ "Applications" ],
       "parameters_template": [
-          { "name": "Input Seismic3D Names", "inputDataType": "SeismicData3DGeoms|SeismicDataGeoms3DCubes", "type": "ListView" },
-          { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
+          { "name": "Input Seismic2D Names", "inputDataType": "SeismicDataGeoms2DNames", "collectChildren": true, "type": "ListView" },
+          { "name": "Seismic2DGeometries", "inputDataType": "SeismicDataGeoms2DNames", "type": "CustomStringList" },
+          { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes", "type": "ListView" },          
           { "name": "New Name", "type": "LineEdit", "default": "Butter" },
           {
           "name": "lowFreq",
@@ -13,23 +14,23 @@
           "default": 1,
           "min": 0,
           "max": 100
-        },
-		{
+      },
+	{
           "name": "step",
           "type": "SpinBox",
           "title": "step",
           "default": 1,
           "min": 0,
           "max": 100
-        },
-		{
+      },
+	{
           "name": "kol_step",
           "type": "SpinBox",
           "title": "kol_step",
           "default": 1,
           "min": 0,
           "max": 100
-        },
+      },
       { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 8 },
       {"name": "margin", "type": "CustomInt", "default": 1}
     ]
