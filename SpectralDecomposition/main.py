@@ -19,7 +19,7 @@ def decomp(f_in, width):
 def f2w(f, fs):
     return fs/(math.sqrt(2.0) * np.pi * f)
 
-class Butter (di_app.DiAppSeismic3D2D):
+class Decomposition (di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
         super().__init__(in_name_par="Input Seismic3D Names", 
                          in_line_geometries_par="Seismic2DGeometries", in_line_names_par="Input Seismic2D Names",
@@ -60,6 +60,6 @@ class Butter (di_app.DiAppSeismic3D2D):
 
 if __name__ == "__main__":
     LOG.debug(f"Starting job")
-    job = Butter()
+    job = Decomposition()
     res_final = job.run()
     LOG.info(f"{res_final}")
