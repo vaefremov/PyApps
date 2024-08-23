@@ -49,12 +49,11 @@ class Butter (di_app.DiAppSeismic3D2D):
         fs = 1e6/z_step
     
         f_out = []
-
-        for i in self.frequencies :
-            w = f2w(i, fs)
-            result = (np.apply_along_axis(decomp, f_in, w)).astype('float32')
-            np.nan_to_num(result, nan=MAXFLOAT, copy=False)
-            f_out.append(result)   
+        widths=[f2w(f, fs) for f in self.frequencies]
+        result = (np.apply_along_axis(decomp, -1, f_in, widths)).astype('float32')
+        np.nan_to_num(result, nan=MAXFLOAT, copy=False)
+        f_out=[result[:,:,i,:] for i in range(len(self.frequencies))]  
+        
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
 
         return tuple(i for i in f_out if i is not None)

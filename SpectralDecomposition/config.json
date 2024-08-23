@@ -6,7 +6,7 @@
         { "name": "Input Seismic2D Names", "inputDataType": "SeismicDataGeoms2DNames", "collectChildren": true, "type": "ListView" },
         { "name": "Seismic2DGeometries", "inputDataType": "SeismicDataGeoms2DNames", "type": "CustomStringList" },
         { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes", "type": "ListView" },          
-        { "name": "New Name", "type": "LineEdit", "default": "Butter" },
+        { "name": "New Name", "type": "LineEdit", "default": "SpecDecomp" },
         {
           "name": "lowFreq",
           "type": "SpinBox",
