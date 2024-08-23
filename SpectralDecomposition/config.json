@@ -13,25 +13,25 @@
           "title": "lowFreq",
           "default": 10,
           "min": 0,
-          "max": 1000
+          "max": 200
         },
 		{
           "name": "step",
           "type": "SpinBox",
           "title": "step",
-          "default": 1,
-          "min": 0,
-          "max": 1000
+          "default": 5,
+          "min": 1,
+          "max": 100
         },
 		{
           "name": "num_steps",
           "type": "SpinBox",
           "title": "num_steps",
-          "default": 1,
-          "min": 0,
+          "default": 10,
+          "min": 1,
           "max": 100
         },
-      { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 8 },
+      { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 40 },
       {"name": "margin", "type": "CustomInt", "default": 1}
     ]
   }
