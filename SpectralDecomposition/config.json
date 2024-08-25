@@ -8,9 +8,24 @@
         { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes", "type": "ListView" },          
         { "name": "New Name", "type": "LineEdit", "default": "SpecDecomp" },
         {
+          "name": "type_decomposition",
+          "type": "ComboBox",
+          "title": "decomposition type",
+          "default": "CWT",
+          "items": ["STFT","CWT"]
+        },
+        {
+          "name": "window_width",
+          "type": "SpinBox",
+          "title": "window width for STFT (us)",
+          "default": 100,
+          "min": 0,
+          "max": 10000
+        },
+        {
           "name": "lowFreq",
           "type": "SpinBox",
-          "title": "lowFreq",
+          "title": "lower frequency (Hz)",
           "default": 10,
           "min": 0,
           "max": 1000
@@ -26,7 +41,7 @@
 		{
           "name": "num_steps",
           "type": "SpinBox",
-          "title": "num_steps",
+          "title": "number of steps",
           "default": 1,
           "min": 0,
           "max": 100

@@ -6,18 +6,22 @@ import time
 
 import numpy as np
 import math
-from scipy.signal import hilbert,cwt,ricker
+from scipy.signal import hilbert, cwt, ricker, convolve
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 MAXFLOAT = float(np.finfo(np.float32).max)
 
-def decomp(f_in, width):
-    result = np.abs(hilbert(cwt(f_in,ricker,width)))
-    return result
-    
 def f2w(f, fs):
     return fs/(math.sqrt(2.0) * np.pi * f)
+
+def decomp_CWT(f_in, width):
+    result = np.abs(hilbert(cwt(f_in,ricker,width)))
+    return result
+
+def decomp_STFT(f_in, c_exp):
+    result = np.abs(convolve(f_in,c_exp))
+    return result
 
 class Decomposition (di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
@@ -30,6 +34,8 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         self.lowFreq = self.description["lowFreq"]
         self.step = self.description["step"] # input step is in ms, re-calculating to us
         self.num_steps = self.description["num_steps"]
+        self.window_width = self.description["window_width"]/1e-3
+        self.type_decomposition = self.description["type_decomposition"]
         out_names   = []
         frequencies = []
 
@@ -47,12 +53,22 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         z_step = context.out_cube_params["z_step"]
         f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
         fs = 1e6/z_step
-    
+
         f_out = []
-        widths=[f2w(f, fs) for f in self.frequencies]
-        result = (np.apply_along_axis(decomp, -1, f_in, widths)).astype('float32')
-        np.nan_to_num(result, nan=MAXFLOAT, copy=False)
-        f_out=[result[:,:,i,:] for i in range(len(self.frequencies))]  
+        if self.type_decomposition == 'STFT' :
+            npoints = np.floor(self.window_width / z_step).astype('int')
+            t = np.linspace(0., self.window_width, npoints+1) * z_step
+            c_exp = [np.exp(-1.j*np.pi * 2 * f * t) for f in self.frequencies]
+            for e in c_exp:
+                result = (np.apply_along_axis(decomp_STFT, -1, f_in, e)).astype('float32')
+                np.nan_to_num(result, nan=MAXFLOAT, copy=False)
+                f_out.append(result)
+        
+        if self.type_decomposition == 'CWT' :
+            widths=[f2w(f, fs) for f in self.frequencies]
+            result = (np.apply_along_axis(decomp_CWT, -1, f_in, widths)).astype('float32')
+            np.nan_to_num(result, nan=MAXFLOAT, copy=False)
+            f_out=[result[:,:,i,:] for i in range(len(self.frequencies))]  
         
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
 
