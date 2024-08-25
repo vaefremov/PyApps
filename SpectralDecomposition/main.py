@@ -57,7 +57,7 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         f_out =  []
         if self.type_decomposition == 'STFT' :
             npoints = np.floor(self.window_width / z_step).astype('int')
-            t = np.linspace(0., self.window_width/1e3, npoints+1) 
+            t = np.linspace(0., self.window_width/1e6, npoints+1) 
             c_exp = [np.exp(-1.j*np.pi * 2 * f * t) for f in self.frequencies]
             for e in c_exp:
                 result = (np.apply_along_axis(decomp_STFT, -1, f_in, e)).astype('float32')
