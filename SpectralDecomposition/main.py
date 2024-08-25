@@ -20,7 +20,7 @@ def decomp_CWT(f_in, width):
     return result
 
 def decomp_STFT(f_in, c_exp):
-    result = np.abs(convolve(f_in,c_exp))
+    result = np.abs(convolve(f_in,c_exp,mode='same'))
     return result
 
 class Decomposition (di_app.DiAppSeismic3D2D):
