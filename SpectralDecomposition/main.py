@@ -53,11 +53,11 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         z_step = context.out_cube_params["z_step"]
         f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
         fs = 1e6/z_step
-
-        f_out = []
+        N = f_in.shape[-1]
+        f_out =  []
         if self.type_decomposition == 'STFT' :
             npoints = np.floor(self.window_width / z_step).astype('int')
-            t = np.linspace(0., self.window_width, npoints+1) * z_step
+            t = np.linspace(0., self.window_width/1e3, npoints+1) 
             c_exp = [np.exp(-1.j*np.pi * 2 * f * t) for f in self.frequencies]
             for e in c_exp:
                 result = (np.apply_along_axis(decomp_STFT, -1, f_in, e)).astype('float32')

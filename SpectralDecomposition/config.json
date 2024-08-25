@@ -18,9 +18,9 @@
           "name": "window_width",
           "type": "SpinBox",
           "title": "window width for STFT (us)",
-          "default": 100,
-          "min": 0,
-          "max": 10000
+          "default": 10000,
+          "min": 2000,
+          "max": 100000
         },
         {
           "name": "lowFreq",
