@@ -20,7 +20,7 @@ def decomp_CWT(f_in, width):
     return result
 
 def decomp_STFT(f_in, c_exp):
-    result = np.abs(convolve(f_in,c_exp,mode='same'))
+    result = np.abs(convolve(f_in, c_exp, mode='same'))
     return result
 
 class Decomposition (di_app.DiAppSeismic3D2D):
@@ -34,7 +34,7 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         self.lowFreq = self.description["lowFreq"]
         self.step = self.description["step"] # input step is in ms, re-calculating to us
         self.num_steps = self.description["num_steps"]
-        self.window_width = self.description["window_width"]/1e-3
+        self.window_width = self.description["window_width"]
         self.type_decomposition = self.description["type_decomposition"]
         out_names   = []
         frequencies = []
