@@ -34,13 +34,13 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         self.lowFreq = self.description["lowFreq"]
         self.step = self.description["step"] # input step is in ms, re-calculating to us
         self.num_steps = self.description["num_steps"]
-        self.window_width = self.description["window_width"]
+        self.window_width = self.description["window_width"]*1e3
         self.type_decomposition = self.description["type_decomposition"]
         out_names   = []
         frequencies = []
 
         for n in range(self.lowFreq, self.lowFreq + self.step * (self.num_steps+1), self.step ):
-            out_names.append('spec_decomp_'+'_'+str(n)+'_'+str(self.step))
+            out_names.append(self.type_decomposition+'_'+str(n)+'_'+str(self.step))
             frequencies.append(n)
 
         self.frequencies = frequencies

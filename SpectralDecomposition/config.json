@@ -11,16 +11,16 @@
           "name": "type_decomposition",
           "type": "ComboBox",
           "title": "decomposition type",
-          "default": "CWT",
+          "default": "STFT",
           "items": ["STFT","CWT"]
         },
         {
           "name": "window_width",
-          "type": "SpinBox",
-          "title": "window width for STFT (us)",
-          "default": 10000,
-          "min": 2000,
-          "max": 100000
+          "type": "DoubleSpinBox",
+          "title": "window width for STFT [ms]",
+          "default": 10,
+          "min": 0.01,
+          "max": 1000
         },
         {
           "name": "lowFreq",
