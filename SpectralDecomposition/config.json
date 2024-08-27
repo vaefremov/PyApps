@@ -12,7 +12,7 @@
           "type": "ComboBox",
           "title": "decomposition type",
           "default": "STFT",
-          "items": ["STFT","CWT"]
+          "items": ["STFT","CWT","BPF"]
         },
         {
           "name": "window_width",

@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 import math
-from scipy.signal import hilbert, cwt, ricker, convolve
+from scipy.signal import hilbert, cwt, ricker, convolve, butter, filtfilt
 
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
@@ -36,12 +36,18 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         self.num_steps = self.description["num_steps"]
         self.window_width = self.description["window_width"]*1e3
         self.type_decomposition = self.description["type_decomposition"]
+
         out_names   = []
         frequencies = []
-
-        for n in range(self.lowFreq, self.lowFreq + self.step * (self.num_steps+1), self.step ):
-            out_names.append(self.type_decomposition+'_'+str(n)+'_'+str(self.step))
-            frequencies.append(n)
+            
+        if self.type_decomposition =="BPF":
+            for n in range(self.lowFreq,self.lowFreq +self.step *self.kol_step,self.step ):
+                out_names.append(self.type_decomposition+'_'+str(n)+'_'+str(n + self.step)+'_'+str(self.step))
+                frequencies.append([n, n + self.step])
+        else:
+            for n in range(self.lowFreq, self.lowFreq + self.step * (self.num_steps+1), self.step ):
+                out_names.append(self.type_decomposition+'_'+str(n)+'_'+str(self.step))
+                frequencies.append(n)
 
         self.frequencies = frequencies
         self.out_names = out_names
@@ -68,8 +74,15 @@ class Decomposition (di_app.DiAppSeismic3D2D):
             widths=[f2w(f, fs) for f in self.frequencies]
             result = (np.apply_along_axis(decomp_CWT, -1, f_in, widths)).astype('float32')
             np.nan_to_num(result, nan=MAXFLOAT, copy=False)
-            f_out=[result[:,:,i,:] for i in range(len(self.frequencies))]  
-        
+            f_out=[result[:,:,i,:] for i in range(len(self.frequencies))] 
+
+        if self.type_decomposition == 'BPF' :
+            for n in self.frequencies:
+                b, a = butter(5, n, fs=fs, btype='band')
+                result = (np.abs(hilbert(filtfilt(b, a, f_in)))).astype('float32')
+                np.nan_to_num(result, nan=MAXFLOAT, copy=False)
+                f_out.append(result) 
+
         LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
 
         return tuple(i for i in f_out if i is not None)
