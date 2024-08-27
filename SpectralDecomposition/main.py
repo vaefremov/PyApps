@@ -41,7 +41,7 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         frequencies = []
             
         if self.type_decomposition =="BPF":
-            for n in range(self.lowFreq,self.lowFreq +self.step *self.kol_step,self.step ):
+            for n in range(self.lowFreq,self.lowFreq +self.step *self.num_steps,self.step ):
                 out_names.append(self.type_decomposition+'_'+str(n)+'_'+str(n + self.step)+'_'+str(self.step))
                 frequencies.append([n, n + self.step])
         else:
