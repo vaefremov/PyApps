@@ -74,7 +74,10 @@ class Decomposition (di_app.DiAppSeismic3D2D):
             widths=[f2w(f, fs) for f in self.frequencies]
             result = (np.apply_along_axis(decomp_CWT, -1, f_in, widths)).astype('float32')
             np.nan_to_num(result, nan=MAXFLOAT, copy=False)
-            f_out=[result[:,:,i,:] for i in range(len(self.frequencies))] 
+            if len(f_in.shape) == 3:
+                f_out=[result[:,:,i,:] for i in range(len(self.frequencies))] 
+            else:
+                f_out=[result[:,i,:] for i in range(len(self.frequencies))] 
 
         if self.type_decomposition == 'BPF' :
             for n in self.frequencies:
