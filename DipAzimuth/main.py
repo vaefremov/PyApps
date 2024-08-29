@@ -56,7 +56,8 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, dt, w_amp, w_pha
         q = np.divide(ph_grad[0], h_freq)
         h_dip = np.sqrt(p**2 + q**2)
         np.nan_to_num(h_dip, nan=MAXFLOAT, copy=False)
-    return h_amp, h_phase if w_phase else None, h_freq if w_freq else None, h_azimuth, h_dip
+    return h_amp if w_amp else None, h_phase if w_phase else None, h_freq if w_freq else None, h_azimuth if w_azimuth else None,\
+          h_dip if w_dip else None
     
 class DipAzimuth(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
