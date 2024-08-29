@@ -56,7 +56,7 @@ class Decomposition (di_app.DiAppSeismic3D2D):
         tm_start = time.time()
         LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
         LOG.info(f"Context: {context}")
-        z_step = context.out_cube_params["z_step"]
+        z_step = context.out_cube_params["z_step"] if context.out_cube_params else context.out_line_params["z_step"]
         f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
         fs = 1e6/z_step
         N = f_in.shape[-1]
