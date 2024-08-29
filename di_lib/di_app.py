@@ -16,6 +16,7 @@ from multiprocessing import Pool, cpu_count
 import signal
 import functools
 import time
+import traceback
 
 LOG = logging.getLogger(__name__)
 
@@ -134,7 +135,12 @@ class DiApp(metaclass=abc.ABCMeta):
         if tmp_f is None:
             LOG.info(f"Skipped: {i} {frag}")
             return i, "SKIP"
-        f_out = self.compute((tmp_f,))
+        f_out = ()
+        try:
+            f_out = f_out = self.compute((tmp_f,))
+        except Exception:
+            traceback.print_exc()
+            raise
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(c_out, f_out):
@@ -223,7 +229,12 @@ class DiAppSeismic3D(DiApp):
         out_cube_params = c_out[0]._get_info() if len(c_out) else None
         context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
         context.in_cube_params["chunk"] = frag
-        f_out = self.compute((tmp_f,), context=context)
+        f_out = ()
+        try:
+            f_out = self.compute((tmp_f,), context=context)
+        except Exception:
+            traceback.print_exc()
+            raise
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(c_out, f_out):
@@ -322,7 +333,12 @@ class DiAppSeismic3DMultiple(DiApp):
         out_cube_params = c_out[0]._get_info() if len(c_out) else None
         context = Context(in_cube_params=c_in[0]._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
         context.in_cube_params["chunk"] = frag
-        f_out = self.compute(tmp_f, context=context)
+        f_out = ()
+        try:
+            f_out = self.compute(tmp_f, context=context)
+        except Exception:
+            traceback.print_exc()
+            raise
         if DiApp.wrong_output_formats(tmp_f, f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(c_out, f_out):
@@ -446,7 +462,12 @@ class DiAppSeismic3D2D(DiApp):
         out_cube_params = c_out[0]._get_info() if len(c_out) else None
         context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
         context.in_cube_params["chunk"] = frag
-        f_out = self.compute((tmp_f,), context=context)
+        f_out = ()
+        try:
+            f_out = self.compute((tmp_f,), context=context)
+        except Exception:
+            traceback.print_exc()
+            raise
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(c_out, f_out):
@@ -466,9 +487,14 @@ class DiAppSeismic3D2D(DiApp):
             return nm, "SKIP"
         out_line_params = p_out[0]._get_info() if len(p_out) else None
         context = Context(in_cube_params=None, in_line_params=p_in._get_info(), out_cube_params=None, out_line_params=out_line_params)
-        f_out = self.compute((tmp_f,), context=context)
+        f_out = ()
+        try:
+            f_out = self.compute((tmp_f,), context=context)
+        except Exception:
+            traceback.print_exc()
+            raise
         if DiApp.wrong_output_formats((tmp_f,), f_out):
-            raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
+            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(p_out, f_out):
             output_frag_if_not_none(w, f)
         LOG.info(f"Processed {nm}")
