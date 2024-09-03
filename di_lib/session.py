@@ -111,3 +111,14 @@ class DISession:
         # and create cube on server
         line_writer._create()
         return line_writer
+
+
+    def list_planars_3d(self):
+        raise NotImplementedError("Not implemented!")
+
+    def get_planar_3d(self, geometry_name: str, name: str):
+        raise NotImplementedError("Not implemented!")
+
+    def create_planar_3d_as_other(self, name: str):
+        raise NotImplementedError("Not implemented!")
+    
