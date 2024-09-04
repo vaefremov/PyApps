@@ -3,6 +3,7 @@ import numpy as np
 import requests
 import json
 import struct
+from typing import Optional
 
 LOG = logging.getLogger(__name__)
 
@@ -71,3 +72,16 @@ class DIHorizon3D:
             "domain": self.domain
         }
         return i
+
+    def get_data(self) -> Optional[np.ndarray]:
+        url = f"{self.server_url}/horizons/3d/data/{self.project_id}/{self.horizon_id}/"
+        with requests.get(url) as resp:
+            bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error("Request finished with error: %s", resp.status_code)
+            nx, ny = struct.unpack("<ii", raw_data[:8])
+            LOG.debug(f"{nx=}, {ny=}")
+            gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
+            gr_arr.shape = (nx, ny)
+            return gr_arr
