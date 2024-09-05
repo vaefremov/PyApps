@@ -130,8 +130,15 @@ class DISession:
         hor._read_info()
         return hor
 
+    def get_attribute_3d_writer(self, geometry_name: str, name: str) -> DIHorizon3DWriter:
+        hor = DIHorizon3DWriter(self.project_id, geometry_name, name)
+        hor.server_url = self.server_url
+        hor.token = self.token
+        hor._read_info()
+        return hor
+
     def create_attribute_3d_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
-        attr_writer = DIHorizon3DWriter(self.project_id, name)
+        attr_writer = DIHorizon3DWriter(self.project_id, original_attribute.geometry_name, name)
         attr_writer.server_url = self.server_url
         attr_writer.token = self.token
         original_info = original_attribute._get_info()
