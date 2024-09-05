@@ -121,7 +121,7 @@ class DIHorizon3DWriter(DIHorizon3D):
                     raise RuntimeError(f"Failed to create horizon, response code {resp.status_code}")
                 resp_j = json.loads(resp.content)
                 LOG.info("Reply: %s", resp_j)
-                self.cube_id = resp_j["id"]
+                self.horizon_id = resp_j["id"]
         except requests.exceptions.ConnectionError as ex:
             LOG.error("Exception during POST: %s", str(ex))
             raise ex
