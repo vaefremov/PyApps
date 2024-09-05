@@ -137,7 +137,7 @@ class DISession:
         hor._read_info()
         return hor
 
-    def create_attribute_3d_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
+    def create_attribute_3d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
         attr_writer = DIHorizon3DWriter(self.project_id, original_attribute.geometry_name, name)
         attr_writer.server_url = self.server_url
         attr_writer.token = self.token
@@ -150,3 +150,8 @@ class DISession:
         attr_writer._create()
         return attr_writer
         
+    def delete_attribute_by_id(self, attr_id: int):
+        with requests.delete(f'{self.server_url}/horizons/3d/delete/{attr_id}/', headers={"Content-Type": "application/json", "x-di-authorization": self.token}) as resp:
+            if resp.status_code != 200:
+                LOG.error("Delete failed: %s  / %s", resp.status_code, resp.content)
+                raise RuntimeError(f"Delete failed: {resp.status_code=}")
