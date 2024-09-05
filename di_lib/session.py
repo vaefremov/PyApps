@@ -4,6 +4,7 @@ import sys
 
 from .seismic_cube import DISeismicCube, DISeismicCubeWriter
 from .seismic_line import DISeismicLine, DISeismicLineWriter
+from .attribute import DIHorizon3D, DIHorizon3DWriter
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -111,3 +112,41 @@ class DISession:
         # and create cube on server
         line_writer._create()
         return line_writer
+
+
+    def list_attributes_3d(self):
+        with requests.get(f"{self.server_url}/horizons/3d/list/{self.project_id}/") as resp:
+            if resp.status_code != 200:
+                LOG.error("Cant' get list of 3d attributes: %s", resp.status_code)
+                raise RuntimeError(f"Cant' get list of 3d attributes: {resp.status_code=}")
+                return None
+            resp_j = json.loads(resp.content)
+            return resp_j
+
+    def get_attribute_3d(self, geometry_name: str, name: str) -> DIHorizon3D:
+        hor = DIHorizon3D(self.project_id, geometry_name, name)
+        hor.server_url = self.server_url
+        hor.token = self.token
+        hor._read_info()
+        return hor
+
+    def get_attribute_3d_writer(self, geometry_name: str, name: str) -> DIHorizon3DWriter:
+        hor = DIHorizon3DWriter(self.project_id, geometry_name, name)
+        hor.server_url = self.server_url
+        hor.token = self.token
+        hor._read_info()
+        return hor
+
+    def create_attribute_3d_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
+        attr_writer = DIHorizon3DWriter(self.project_id, original_attribute.geometry_name, name)
+        attr_writer.server_url = self.server_url
+        attr_writer.token = self.token
+        original_info = original_attribute._get_info()
+        new_info = {}
+        new_info.update(original_info)
+        new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_info["mode"] = kw.get("mode", original_info["mode"])
+        attr_writer._init_from_info(new_info)
+        attr_writer._create()
+        return attr_writer
+        
