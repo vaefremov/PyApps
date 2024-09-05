@@ -4,7 +4,7 @@ import sys
 
 from .seismic_cube import DISeismicCube, DISeismicCubeWriter
 from .seismic_line import DISeismicLine, DISeismicLineWriter
-from .attribute import DIHorizon3D
+from .attribute import DIHorizon3D, DIHorizon3DWriter
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -130,6 +130,16 @@ class DISession:
         hor._read_info()
         return hor
 
-    def create_attribute_3d_as_other(self, name: str):
-        raise NotImplementedError("Not implemented!")
-    
+    def create_attribute_3d_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
+        attr_writer = DIHorizon3DWriter(self.project_id, name)
+        attr_writer.server_url = self.server_url
+        attr_writer.token = self.token
+        original_info = original_attribute._get_info()
+        new_info = {}
+        new_info.update(original_info)
+        new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_info["mode"] = kw.get("mode", original_info["mode"])
+        attr_writer._init_from_info(new_info)
+        attr_writer._create()
+        return attr_writer
+        
