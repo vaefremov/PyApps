@@ -86,8 +86,8 @@ class DIHorizon3D:
             gr_arr.shape = (nx, ny)
             return gr_arr
 class DIHorizon3DWriter(DIHorizon3D):
-    def __init__(self, project_id: int, name: str) -> None:
-        super().__init__(project_id, None, name)
+    def __init__(self, project_id: int, geometry_name, name: str) -> None:
+        super().__init__(project_id, geometry_name, name)
 
     def _init_from_info(self, i) -> None:
         LOG.debug(f"{i}")
@@ -103,7 +103,6 @@ class DIHorizon3DWriter(DIHorizon3D):
         self.mode = i["mode"]
 
     def _create(self) -> None:
-        #'http://localhost:8000/horizons/3d/create_empty/60/?geometry_id=19636981'
         url = f"{self.server_url}/horizons/3d/create_empty/{self.project_id}/?geometry_id={self.geometry_id}"
         res_status = 200
         res_id = -1
@@ -126,3 +125,15 @@ class DIHorizon3DWriter(DIHorizon3D):
         except requests.exceptions.ConnectionError as ex:
             LOG.error("Exception during POST: %s", str(ex))
             raise ex
+
+    def write_data(self, data_array):
+        url = f"{self.server_url}/horizons/3d/update_data/{self.project_id}/{self.horizon_id}/"
+        nx, ny = data_array.shape
+        pref = struct.pack('<ii', nx, ny)
+        data = pref + data_array.tobytes()
+        res_status = 200
+        with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+            res_status = resp.status_code
+            if resp.status_code != 200:
+                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                return res_status
