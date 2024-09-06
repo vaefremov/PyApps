@@ -85,6 +85,7 @@ class DIHorizon3D:
             gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
             gr_arr.shape = (nx, ny)
             return gr_arr
+
 class DIHorizon3DWriter(DIHorizon3D):
     def __init__(self, project_id: int, geometry_name, name: str) -> None:
         super().__init__(project_id, geometry_name, name)
@@ -130,6 +131,39 @@ class DIHorizon3DWriter(DIHorizon3D):
         url = f"{self.server_url}/horizons/3d/update_data/{self.project_id}/{self.horizon_id}/"
         nx, ny = data_array.shape
         pref = struct.pack('<ii', nx, ny)
+        data = pref + data_array.tobytes()
+        res_status = 200
+        with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+            res_status = resp.status_code
+            if resp.status_code != 200:
+                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                return res_status
+
+class DIAttribute2D(DIHorizon3DWriter):
+    """Reader/writer for layered attributes.
+    """
+    def __init__(self, project_id: int, geometry_name, name: str) -> None:
+        super().__init__(project_id, geometry_name, name)
+
+    def get_data(self) -> Optional[np.ndarray]:
+        """Reads layered data. Returns array with shape (nlayers, nx, ny).
+        """
+        url = f"{self.server_url}/horizons/3d/layered_data/{self.project_id}/{self.horizon_id}/"
+        with requests.get(url) as resp:
+            bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error("Request finished with error: %s", resp.status_code)
+            nlayers, nx, ny = struct.unpack("<iii", raw_data[:12])
+            LOG.debug(f"{nlayers=} {nx=}, {ny=}")
+            gr_arr = np.frombuffer(raw_data[12:], dtype=np.float32)
+            gr_arr.shape = (nlayers, nx, ny)
+            return gr_arr
+
+    def write_data(self, data_array):
+        url = f"{self.server_url}/horizons/3d/update_layered_data/{self.project_id}/{self.horizon_id}/"
+        nlayers, nx, ny = data_array.shape
+        pref = struct.pack('<iii', nlayers, nx, ny)
         data = pref + data_array.tobytes()
         res_status = 200
         with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
