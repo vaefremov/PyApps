@@ -4,7 +4,7 @@ import sys
 
 from .seismic_cube import DISeismicCube, DISeismicCubeWriter
 from .seismic_line import DISeismicLine, DISeismicLineWriter
-from .attribute import DIHorizon3D, DIHorizon3DWriter
+from .attribute import DIAttribute2D, DIHorizon3D, DIHorizon3DWriter
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -123,22 +123,42 @@ class DISession:
             resp_j = json.loads(resp.content)
             return resp_j
 
-    def get_attribute_3d(self, geometry_name: str, name: str) -> DIHorizon3D:
+    def get_horizon_3d(self, geometry_name: str, name: str) -> DIHorizon3D:
         hor = DIHorizon3D(self.project_id, geometry_name, name)
         hor.server_url = self.server_url
         hor.token = self.token
         hor._read_info()
         return hor
 
-    def get_attribute_3d_writer(self, geometry_name: str, name: str) -> DIHorizon3DWriter:
+    def get_horizon_3d_writer(self, geometry_name: str, name: str) -> DIHorizon3DWriter:
         hor = DIHorizon3DWriter(self.project_id, geometry_name, name)
         hor.server_url = self.server_url
         hor.token = self.token
         hor._read_info()
         return hor
 
-    def create_attribute_3d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
+    def create_horizon_3d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, **kw):
         attr_writer = DIHorizon3DWriter(self.project_id, original_attribute.geometry_name, name)
+        attr_writer.server_url = self.server_url
+        attr_writer.token = self.token
+        original_info = original_attribute._get_info()
+        new_info = {}
+        new_info.update(original_info)
+        new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_info["mode"] = kw.get("mode", original_info["mode"])
+        attr_writer._init_from_info(new_info)
+        attr_writer._create()
+        return attr_writer
+
+    def get_attribute_2d_writer(self, geometry_name: str, name: str) -> DIAttribute2D:
+        hor = DIAttribute2D(self.project_id, geometry_name, name)
+        hor.server_url = self.server_url
+        hor.token = self.token
+        hor._read_info()
+        return hor
+
+    def create_attribute_2d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, **kw) -> DIAttribute2D:
+        attr_writer = DIAttribute2D(self.project_id, original_attribute.geometry_name, name)
         attr_writer.server_url = self.server_url
         attr_writer.token = self.token
         original_info = original_attribute._get_info()
