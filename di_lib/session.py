@@ -170,6 +170,28 @@ class DISession:
         attr_writer._create()
         return attr_writer
         
+    def create_attribute_2d_writer_for_cube(self,  original_cube: DISeismicCube, name: str, **kw) -> DIAttribute2D:
+        attr_writer = DIAttribute2D(self.project_id, original_cube.geometry_name, name)
+        attr_writer.server_url = self.server_url
+        attr_writer.token = self.token
+        original_info = original_cube._get_info()
+        new_info = {
+            "id": None,
+            "dx": original_info["d_inline"],
+            "dy": original_info["d_xline"],
+            "origin": original_info["origin"],
+            "nx": original_info["max_inline"]+1, # add 1 to compensate for in/x-line numbers starting from 1
+            "ny": original_info["max_xline"]+1,
+            "geometry_id": original_info["geometry_id"],
+            "geometry_name": original_info["geometry_name"]
+        }
+        # new_info.update(original_info)
+        new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_info["mode"] = None
+        attr_writer._init_from_info(new_info)
+        attr_writer._create()
+        return attr_writer
+
     def delete_attribute_by_id(self, attr_id: int):
         with requests.delete(f'{self.server_url}/horizons/3d/delete/{attr_id}/', headers={"Content-Type": "application/json", "x-di-authorization": self.token}) as resp:
             if resp.status_code != 200:
