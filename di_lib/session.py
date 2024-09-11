@@ -121,7 +121,16 @@ class DISession:
                 raise RuntimeError(f"Cant' get list of 3d attributes: {resp.status_code=}")
                 return None
             resp_j = json.loads(resp.content)
-            return resp_j
+            return [a for a in resp_j if (a["n_layers"] is not None) and (a["n_layers"]>1)]
+
+    def list_horizons_3d(self):
+        with requests.get(f"{self.server_url}/horizons/3d/list/{self.project_id}/") as resp:
+            if resp.status_code != 200:
+                LOG.error("Cant' get list of 3d attributes: %s", resp.status_code)
+                raise RuntimeError(f"Cant' get list of 3d attributes: {resp.status_code=}")
+                return None
+            resp_j = json.loads(resp.content)
+            return [a for a in resp_j if (a["n_layers"] is None) or (a["n_layers"]==1)]
 
     def get_horizon_3d(self, geometry_name: str, name: str) -> DIHorizon3D:
         hor = DIHorizon3D(self.project_id, geometry_name, name)
