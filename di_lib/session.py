@@ -180,8 +180,8 @@ class DISession:
             "dx": original_info["d_inline"],
             "dy": original_info["d_xline"],
             "origin": original_info["origin"],
-            "nx": original_info["max_inline"]+1, # add 1 to compensate for in/x-line numbers starting from 1
-            "ny": original_info["max_xline"]+1,
+            "nx": original_info["max_inline"], # we do not add 1 to compensate for in/x-line numbers starting from 1
+            "ny": original_info["max_xline"],
             "geometry_id": original_info["geometry_id"],
             "geometry_name": original_info["geometry_name"]
         }
