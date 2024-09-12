@@ -155,6 +155,8 @@ class DISession:
         new_info.update(original_info)
         new_info["domain"] = kw.get("domain", original_info["domain"])
         new_info["mode"] = kw.get("mode", original_info["mode"])
+        new_info["min_nx"] = kw.get("min_nx", original_info["min_nx"])
+        new_info["min_ny"] = kw.get("min_ny", original_info["min_ny"])
         attr_writer._init_from_info(new_info)
         attr_writer._create()
         return attr_writer
