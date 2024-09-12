@@ -51,6 +51,8 @@ class DIHorizon3D:
                     self.v_x = i["dy"]
                     self.n_i = i["nx"]
                     self.n_x = i["ny"]
+                    self.min_i = i["min_nx"]
+                    self.min_x = i["min_ny"]
                     self.domain = i["domain"]
                     self.mode = i["mode"]
             if self.horizon_id is None:
@@ -63,6 +65,8 @@ class DIHorizon3D:
             "name": self.name,
             "nx": self.n_i,
             "ny": self.n_x,
+            "min_nx": self.min_i,
+            "min_ny": self.min_x,
             "origin": self.origin,
             "dx": self.v_i,
             "dy": self.v_x,
@@ -100,6 +104,8 @@ class DIHorizon3DWriter(DIHorizon3D):
         self.v_x = i["dy"]
         self.n_i = i["nx"]
         self.n_x = i["ny"]
+        self.min_i = i["min_nx"]
+        self.min_x = i["min_ny"]
         self.domain = i["domain"]
         self.mode = i["mode"]
 
