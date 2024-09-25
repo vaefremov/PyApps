@@ -157,6 +157,21 @@ class DISeismicCube:
             gr_arr.shape = (ninlines, ncdps, nz)
             return gr_arr
 
+    def get_fragment_z(self, inline_no: int, inline_count: int, xline_no: int, xline_count: int, z_no: int, z_count: int) -> Optional[np.ndarray]:
+        url = f"{self.server_url}/seismic_3d/data/rect_fragment/{self.cube_id}/?inline_no={inline_no}&inline_count={inline_count}&xline_no={xline_no}&xline_count={xline_count}&z_no={z_no}&z_count={z_count}"
+        with requests.get(url) as resp:
+            bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error("Request finished with error: %s", resp.status_code)
+            nz, ncdps, ninlines = struct.unpack("<iii", raw_data[:12])
+            LOG.debug(f"{nz}, {ncdps}, {ninlines}")
+            if nz < 0:
+                return None
+            gr_arr = np.frombuffer(raw_data[12:], dtype=np.float32)
+            gr_arr.shape = (ninlines, ncdps, nz)
+            return gr_arr
+
     def generate_fragments_grid(self, nfrag_i, nfrag_x):
         tmp = generate_fragments_grid(self.min_i, self.n_i, nfrag_i, self.min_x, self.n_x, nfrag_x)
         return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in tmp]
