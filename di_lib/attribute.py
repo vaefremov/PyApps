@@ -134,6 +134,8 @@ class DIHorizon3DWriter(DIHorizon3D):
             raise ex
 
     def write_data(self, data_array):
+        if data_array.dtype != np.float32:
+            raise ValueError('Data type must be float32')
         url = f"{self.server_url}/horizons/3d/update_data/{self.project_id}/{self.horizon_id}/"
         nx, ny = data_array.shape
         pref = struct.pack('<ii', nx, ny)
@@ -167,6 +169,9 @@ class DIAttribute2D(DIHorizon3DWriter):
             return gr_arr
 
     def write_data(self, data_array):
+        # make sure type of the input data is float32
+        if data_array.dtype != np.float32:
+            raise ValueError('Data type must be float32')
         url = f"{self.server_url}/horizons/3d/update_layered_data/{self.project_id}/{self.horizon_id}/"
         nlayers, nx, ny = data_array.shape
         pref = struct.pack('<iii', nlayers, nx, ny)
