@@ -158,7 +158,7 @@ class DISeismicCube:
             return gr_arr
 
     def get_fragment_z(self, inline_no: int, inline_count: int, xline_no: int, xline_count: int, z_no: int, z_count: int) -> Optional[np.ndarray]:
-        url = f"{self.server_url}/seismic_3d/data/rect_fragment/{self.cube_id}/?inline_no={inline_no}&inline_count={inline_count}&xline_no={xline_no}&xline_count={xline_count}&z_no={z_no}&z_count={z_count}"
+        url = f"{self.server_url}/seismic_3d/data/rect_fragment_z/{self.cube_id}/?inline_no={inline_no}&inline_count={inline_count}&xline_no={xline_no}&xline_count={xline_count}&z_no={z_no}&z_count={z_count}"
         with requests.get(url) as resp:
             bytes_read = len(resp.content)
             raw_data = resp.content
