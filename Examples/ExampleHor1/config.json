@@ -1,0 +1,11 @@
+{
+    "config": {
+      "application": "ExampleHor1",
+      "category": [ "Applications" ],
+      "parameters_template": [
+          { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "LineEdit" },
+          { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes", "type": "ListView" },
+          { "name": "New Name", "type": "LineEdit", "default": "Result" }
+      ]
+    }
+  }
