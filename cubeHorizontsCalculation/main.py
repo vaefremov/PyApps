@@ -1,0 +1,90 @@
+from typing import Optional, Tuple
+import logging
+import numpy as np
+from scipy.interpolate import interp1d
+
+from di_lib import di_app
+from di_lib.di_app import Context
+from di_lib.seismic_cube import DISeismicCube
+from di_lib.attribute import DIHorizon3D, DIAttribute2D
+
+import time
+
+logging.basicConfig(level=logging.DEBUG)
+LOG = logging.getLogger(__name__)
+
+incr_i = 60
+incr_x = 60
+
+def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x, hdata):
+    inc_i = incr_i
+    inc_x = incr_x
+    res1 = [(i, j, min(n_i-1, i+inc_i-1), min(n_x-1, j+inc_x-1)) for i in range(min_i, n_i-1, inc_i) for j in range(min_x, n_x-1, inc_x)]
+    res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
+    return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
+
+def linear_interpolate(y, z, zs):
+    good_idx = np.where( np.isfinite(y) )
+    try :
+        y_out = interp1d(z[good_idx], y[good_idx], axis=-1, bounds_error=False )(zs)
+        return y_out
+    except:
+        return np.full(zs.shape[-1], np.nan)
+
+def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[np.ndarray]:
+    
+    MAXFLOAT = float(np.finfo(np.float32).max) 
+    
+    hdata = hor.get_data()
+    hdata = np.where((hdata>= 0.1*MAXFLOAT) | (hdata== np.inf), np.nan, hdata)
+    good_idx = np.where( np.isfinite(hdata) )
+    hdata1 = hdata[good_idx]
+    
+    c = job.session.get_cube(cube_in.geometry_name, cube_in.name, cube_in.name2)
+    cube_time = np.arange(c.data_start, c.data_start  + (c.time_step/1000) * c.n_samples, c.time_step/1000)
+    index_max = np.where((cube_time <= int(np.max(hdata1))) & (cube_time >= int(np.max(hdata1)) - 2))[0]
+    index_min = np.where((cube_time >= int(np.min(hdata1))) & (cube_time <= int(np.min(hdata1)) + 2))[0]
+    cube_time = cube_time[index_min[0]:index_max[0]]
+
+    grid_real, grid_not = generate_fragments(c.min_i, c.n_i, incr_i, c.min_x, c.n_x, incr_x,hdata)
+    new_zr = np.zeros((hdata.shape))
+    total_frag = len(grid_real)
+    completed_frag = 0
+
+    for k in range(len(grid_real)):
+        fr = c.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],int(index_min),int(index_max - index_min))
+        h_new = np.full((grid_not[k][1],grid_not[k][3]), np.nan)
+        for i in range(grid_not[k][1]):
+            for j in range(grid_not[k][3]):
+                if hdata[grid_not[k][0] + i, grid_not[k][2] + j] <= 0.1*MAXFLOAT:
+                    h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time, hdata[grid_not[k][0] + i,grid_not[k][2] + j])
+    
+        new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
+        new_zr = new_zr.astype('float32')
+        completed_frag += 1
+        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+        job.log_progress("calculation", completed_frag*100 // total_frag)
+    
+    return new_zr
+
+class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
+    def __init__(self) -> None:
+        super().__init__(in_name_par="Input Seismic3D Names", 
+                out_name_par="New Name", out_names=[])
+
+    def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
+        raise NotImplementedError("Shouldn't be called in this application!")
+
+if __name__ == "__main__":
+    LOG.debug(f"Starting job ExampleHor1")
+    tm_start = time.time()
+    job = cubeHorizontsCalculation()
+
+    cube_in = job.open_input_dataset()
+    hor_name = job.description["Horizon"]
+    hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
+    f_out = job.session.create_horizon_3d_writer_as_other(hor, job.description["New Name"])
+    dt = compute_attribute(cube_in, hor)
+    f_out.write_data(dt)
+
+    LOG.info(f"Processing time (s): {time.time() - tm_start}")
