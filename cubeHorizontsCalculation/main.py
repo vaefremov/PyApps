@@ -52,7 +52,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
     completed_frag = 0
 
     for k in range(len(grid_real)):
-        fr = c.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],int(index_min),int(index_max - index_min))
+        fr = c.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0],index_max[0] - index_min[0])
         h_new = np.full((grid_not[k][1],grid_not[k][3]), np.nan)
         for i in range(grid_not[k][1]):
             for j in range(grid_not[k][3]):
