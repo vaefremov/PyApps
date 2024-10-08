@@ -29,7 +29,7 @@ def linear_interpolate(y, z, zs):
         y_out = interp1d(z[good_idx], y[good_idx], axis=-1, bounds_error=False )(zs)
         return y_out
     except:
-        return np.full(zs.shape[-1], np.nan)
+        return np.nan
 
 def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[np.ndarray]:
     
