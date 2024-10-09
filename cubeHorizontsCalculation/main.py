@@ -67,6 +67,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
         completed_frag += 1
         LOG.info(f"Completion: {completed_frag*100 // total_frag}")
         job.log_progress("calculation", completed_frag*100 // total_frag)
+        np.nan_to_num(new_zr, nan=MAXFLOAT, copy=False)
     
     return new_zr
 
