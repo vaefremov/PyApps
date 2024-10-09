@@ -31,7 +31,7 @@ class DIHorizon3D:
         self.geometry_id = None
         self.horizon_id = None
         self.n_layers = 0
-        self.layers_names = None
+        self._layers_names = None
 
     def __repr__(self):
         return f"DIHorizon3D: {self.horizon_id=} {self.geometry_name=} {self.name=}"
@@ -57,7 +57,7 @@ class DIHorizon3D:
                     self.domain = i["domain"]
                     self.mode = i["mode"]
                     self.n_layers = i["n_layers"]
-                    self.layers_names = i["layers_names"]
+                    self._layers_names = i["layers_names"]
             if self.horizon_id is None:
                 raise RuntimeError(f"Horizon 3d {self.geometry_name}/{self.name} not found in {self.project_id=}")
 
@@ -186,8 +186,13 @@ class DIAttribute2D(DIHorizon3DWriter):
                 LOG.error("Failed to store horizon data, response code %s", resp.status_code)
                 return res_status
 
-    def set_layers_names(self, layers_names: List[str]):
-        self.layers_names = layers_names
+    @property
+    def layers_names(self):
+        return self._layers_names
+
+    @layers_names.setter
+    def layers_names(self, layers_names: List[str]):
+        self._layers_names = layers_names
         url = f"{self.server_url}/horizons/3d/set_layers_names/{self.project_id}/{self.horizon_id}/"
         body = json.dumps(layers_names).encode("utf8")
         with requests.post(
