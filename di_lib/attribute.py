@@ -3,7 +3,7 @@ import numpy as np
 import requests
 import json
 import struct
-from typing import Optional
+from typing import Optional, List
 
 LOG = logging.getLogger(__name__)
 
@@ -31,7 +31,8 @@ class DIHorizon3D:
         self.geometry_id = None
         self.horizon_id = None
         self.n_layers = 0
-        
+        self._layers_names = None
+
     def __repr__(self):
         return f"DIHorizon3D: {self.horizon_id=} {self.geometry_name=} {self.name=}"
 
@@ -55,6 +56,8 @@ class DIHorizon3D:
                     self.min_x = i["min_ny"]
                     self.domain = i["domain"]
                     self.mode = i["mode"]
+                    self.n_layers = i["n_layers"]
+                    self._layers_names = i["layers_names"]
             if self.horizon_id is None:
                 raise RuntimeError(f"Horizon 3d {self.geometry_name}/{self.name} not found in {self.project_id=}")
 
@@ -182,3 +185,19 @@ class DIAttribute2D(DIHorizon3DWriter):
             if resp.status_code != 200:
                 LOG.error("Failed to store horizon data, response code %s", resp.status_code)
                 return res_status
+
+    @property
+    def layers_names(self):
+        return self._layers_names
+
+    @layers_names.setter
+    def layers_names(self, layers_names: List[str]):
+        self._layers_names = layers_names
+        url = f"{self.server_url}/horizons/3d/set_layers_names/{self.project_id}/{self.horizon_id}/"
+        body = json.dumps(layers_names).encode("utf8")
+        with requests.post(
+                url, data=body, headers={"Content-Type": "application/json", "x-di-authorization": self.token}
+            ) as resp:
+            if resp.status_code != 200:
+                LOG.error("Failed to create horizon, response code %s", resp.status_code)
+                raise RuntimeError(f"Failed to create horizon, response code {resp.status_code}")
