@@ -37,37 +37,41 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
     
     hdata = hor.get_data()
     hdata = np.where((hdata>= 0.1*MAXFLOAT) | (hdata== np.inf), np.nan, hdata)
-    good_idx = np.where( np.isfinite(hdata) )
-    hdata1 = hdata[good_idx]
     
     c = job.session.get_cube(cube_in.geometry_name, cube_in.name, cube_in.name2)
     cube_time = np.arange(c.data_start, c.data_start  + (c.time_step/1000) * c.n_samples, c.time_step/1000)
-    index_max = np.where((cube_time <= int(np.max(hdata1))) & (cube_time >= int(np.max(hdata1)) - 2))[0]
-    index_min = np.where((cube_time >= int(np.min(hdata1))) & (cube_time <= int(np.min(hdata1)) + 2))[0]
-    cube_time = cube_time[index_min[0]:index_max[0]]
-
+    
     grid_real, grid_not = generate_fragments(c.min_i, c.n_i, incr_i, c.min_x, c.n_x, incr_x,hdata)
     new_zr = np.zeros((hdata.shape))
     total_frag = len(grid_real)
     completed_frag = 0
 
     for k in range(len(grid_real)):
-        fr = c.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0],index_max[0] - index_min[0])
-        h_new = np.full((grid_not[k][1],grid_not[k][3]), np.nan)
-        for i in range(grid_not[k][1]):
-            for j in range(grid_not[k][3]):
-                if hdata[grid_not[k][0] + i, grid_not[k][2] + j] <= 0.1*MAXFLOAT:
-                    if np.size(fr) == 1:
-                        continue
-                    else:
-                        h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time, hdata[grid_not[k][0] + i,grid_not[k][2] + j])
+        grid_hor = hdata[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
+        if np.all(np.isnan(grid_hor)) == True:
+            new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = grid_hor
+        else:
+            good_idx = np.where( np.isfinite(grid_hor) )
+            hdata1 = grid_hor[good_idx]
+            index_max = np.where((cube_time >= np.max(np.round(hdata1)) - 1) & (cube_time <= np.max(np.round(hdata1)) + 1))[0]
+            index_min = np.where((cube_time >= np.min(np.round(hdata1)) - 1) & (cube_time <= np.min(np.round(hdata1)) + 1))[0]
+            cube_time_new = cube_time[index_min[0]-5:index_max[0]+5]
+            fr = c.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0]-5,(index_max[0]+5) - (index_min[0]-5))
+            h_new = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan)
+            for i in range(grid_hor.shape[0]):
+                for j in range(grid_hor.shape[1]):
+                    if grid_hor[i,j] <= 0.1 * MAXFLOAT:
+                        if np.size(fr) == 1:
+                            continue
+                        else:
+                            h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
     
-        new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
-        new_zr = new_zr.astype('float32')
-        completed_frag += 1
-        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-        job.log_progress("calculation", completed_frag*100 // total_frag)
-        np.nan_to_num(new_zr, nan=MAXFLOAT, copy=False)
+            new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
+            new_zr = new_zr.astype('float32')
+            completed_frag += 1
+            LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+            job.log_progress("calculation", completed_frag*100 // total_frag)
+            np.nan_to_num(new_zr, nan=MAXFLOAT, copy=False)
     
     return new_zr
 
