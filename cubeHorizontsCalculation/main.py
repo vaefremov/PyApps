@@ -13,8 +13,8 @@ import time
 logging.basicConfig(level=logging.DEBUG)
 LOG = logging.getLogger(__name__)
 
-incr_i = 60
-incr_x = 60
+incr_i = 100
+incr_x = 100
 
 def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x, hdata):
     inc_i = incr_i
@@ -57,7 +57,10 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
         for i in range(grid_not[k][1]):
             for j in range(grid_not[k][3]):
                 if hdata[grid_not[k][0] + i, grid_not[k][2] + j] <= 0.1*MAXFLOAT:
-                    h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time, hdata[grid_not[k][0] + i,grid_not[k][2] + j])
+                    if np.size(fr) == 1:
+                        continue
+                    else:
+                        h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time, hdata[grid_not[k][0] + i,grid_not[k][2] + j])
     
         new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
         new_zr = new_zr.astype('float32')
