@@ -64,7 +64,12 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
                         if np.size(fr) == 1:
                             continue
                         else:
-                            h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
+                            if attribute == 'Amplitude':
+                                h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
+                            if attribute == 'Energy':
+                                ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
+                                ots = int(step/(c.time_step / 1000))
+                                h_new[i,j] = np.sum(fr[i,j,ind - ots:ind + ots])**2
     
             new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
             new_zr = new_zr.astype('float32')
