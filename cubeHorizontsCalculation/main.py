@@ -31,7 +31,7 @@ def linear_interpolate(y, z, zs):
     except:
         return np.nan
 
-def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[np.ndarray]:
+def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, step) -> Optional[np.ndarray]:
     
     MAXFLOAT = float(np.finfo(np.float32).max) 
     
@@ -42,14 +42,14 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
     cube_time = np.arange(c.data_start, c.data_start  + (c.time_step/1000) * c.n_samples, c.time_step/1000)
     
     grid_real, grid_not = generate_fragments(c.min_i, c.n_i, incr_i, c.min_x, c.n_x, incr_x,hdata)
-    new_zr = np.zeros((hdata.shape))
+    new_zr = np.full((hdata.shape[0],hdata.shape[1]), np.nan)
     total_frag = len(grid_real)
     completed_frag = 0
 
     for k in range(len(grid_real)):
         grid_hor = hdata[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
         if np.all(np.isnan(grid_hor)) == True:
-            new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = grid_hor
+            continue
         else:
             good_idx = np.where( np.isfinite(grid_hor) )
             hdata1 = grid_hor[good_idx]
@@ -64,11 +64,11 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D) -> Optional[n
                         if np.size(fr) == 1:
                             continue
                         else:
-                            if attribute == 'Amplitude':
+                            if str(attribute) == 'Amplitude':
                                 h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
-                            if attribute == 'Energy':
+                            if str(attribute) == 'Energy':
                                 ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
-                                ots = int(step/(c.time_step / 1000))
+                                ots = int(int(step)/(c.time_step / 1000))
                                 h_new[i,j] = np.sum(fr[i,j,ind - ots:ind + ots])**2
     
             new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
@@ -92,12 +92,14 @@ if __name__ == "__main__":
     LOG.debug(f"Starting job ExampleHor1")
     tm_start = time.time()
     job = cubeHorizontsCalculation()
+    attribute = job.description["attribute"]
+    step = job.description["step"]
 
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
     f_out = job.session.create_horizon_3d_writer_as_other(hor, job.description["New Name"])
-    dt = compute_attribute(cube_in, hor)
+    dt = compute_attribute(cube_in, hor, attribute, step)
     f_out.write_data(dt)
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
