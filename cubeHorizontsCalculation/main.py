@@ -67,7 +67,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, di
                                 ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
                                 new_dist_up = int((distance_up)/(cube_in.time_step / 1000))
                                 new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
-                                h_new[i,j] = np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2)
+                                h_new[i,j] = (np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2))/len(fr[i,j,ind - new_dist_down:ind + new_dist_up])
     
             new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
             new_zr = new_zr.astype('float32')
