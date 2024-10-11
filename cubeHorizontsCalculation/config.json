@@ -8,7 +8,7 @@
         { "name": "New Name", "type": "LineEdit", "default": "Result" },
         {
           "name": "attribute",
-          "type": "ComboBox",
+          "type": "ListView",
           "title": "Attribute",
           "default": "Amplitude",
           "items": ["Amplitude","Energy"]
