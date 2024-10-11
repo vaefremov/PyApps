@@ -31,17 +31,14 @@ def linear_interpolate(y, z, zs):
     except:
         return np.nan
 
-def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, step) -> Optional[np.ndarray]:
+def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, distance_up, distance_down) -> Optional[np.ndarray]:
     
     MAXFLOAT = float(np.finfo(np.float32).max) 
-    
-    hdata = hor.get_data()
+    hdata = hor_in.get_data()
     hdata = np.where((hdata>= 0.1*MAXFLOAT) | (hdata== np.inf), np.nan, hdata)
-    
-    c = job.session.get_cube(cube_in.geometry_name, cube_in.name, cube_in.name2)
-    cube_time = np.arange(c.data_start, c.data_start  + (c.time_step/1000) * c.n_samples, c.time_step/1000)
-    
-    grid_real, grid_not = generate_fragments(c.min_i, c.n_i, incr_i, c.min_x, c.n_x, incr_x,hdata)
+
+    cube_time = np.arange(cube_in.data_start, cube_in.data_start  + (cube_in.time_step/1000) * cube_in.n_samples, cube_in.time_step/1000)
+    grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x,hdata)
     new_zr = np.full((hdata.shape[0],hdata.shape[1]), np.nan)
     total_frag = len(grid_real)
     completed_frag = 0
@@ -51,12 +48,12 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, st
         if np.all(np.isnan(grid_hor)) == True:
             continue
         else:
-            good_idx = np.where( np.isfinite(grid_hor) )
+            good_idx = np.where(np.isfinite(grid_hor))
             hdata1 = grid_hor[good_idx]
             index_max = np.where((cube_time >= np.max(np.round(hdata1)) - 1) & (cube_time <= np.max(np.round(hdata1)) + 1))[0]
             index_min = np.where((cube_time >= np.min(np.round(hdata1)) - 1) & (cube_time <= np.min(np.round(hdata1)) + 1))[0]
             cube_time_new = cube_time[index_min[0]-5:index_max[0]+5]
-            fr = c.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0]-5,(index_max[0]+5) - (index_min[0]-5))
+            fr = cube_in.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0]-5,(index_max[0]+5) - (index_min[0]-5))
             h_new = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan)
             for i in range(grid_hor.shape[0]):
                 for j in range(grid_hor.shape[1]):
@@ -64,12 +61,13 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, st
                         if np.size(fr) == 1:
                             continue
                         else:
-                            if str(attribute) == 'Amplitude':
+                            if "Amplitude" in attribute:
                                 h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
-                            if str(attribute) == 'Energy':
+                            if "Energy" in attribute:
                                 ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
-                                ots = int(int(step)/(c.time_step / 1000))
-                                h_new[i,j] = np.sum(fr[i,j,ind - ots:ind + ots])**2
+                                new_dist_up = int((distance_up)/(cube_in.time_step / 1000))
+                                new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
+                                h_new[i,j] = np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2)
     
             new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
             new_zr = new_zr.astype('float32')
@@ -77,7 +75,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, st
             LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             job.log_progress("calculation", completed_frag*100 // total_frag)
             np.nan_to_num(new_zr, nan=MAXFLOAT, copy=False)
-    
+ 
     return new_zr
 
 class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
@@ -93,13 +91,13 @@ if __name__ == "__main__":
     tm_start = time.time()
     job = cubeHorizontsCalculation()
     attribute = job.description["attribute"]
-    step = job.description["step"]
-
+    distance_up = job.description["distance_up"]
+    distance_down = job.description["distance_down"]
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
     f_out = job.session.create_horizon_3d_writer_as_other(hor, job.description["New Name"])
-    dt = compute_attribute(cube_in, hor, attribute, step)
+    dt = compute_attribute(cube_in, hor, attribute, distance_up, distance_down)
     f_out.write_data(dt)
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
