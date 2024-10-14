@@ -1,0 +1,34 @@
+{
+  "config": {
+    "application": "cubeHorizontsCalculation",
+    "category": [ "Applications" ],
+    "parameters_template": [
+        { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "LineEdit" },
+        { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes", "type": "ListView" },
+        { "name": "New Name", "type": "LineEdit", "default": "Result" },
+        {
+          "name": "attribute",
+          "type": "ComboBox",
+          "title": "Attribute",
+          "default": "Amplitude",
+          "items": ["Amplitude","Energy"]
+        },
+    {
+          "name": "distance_up",
+          "type": "DoubleSpinBox",
+          "title": "Расстояние до верхней границы, мс",
+          "default": 10,
+          "min": 0.1,
+          "max": 100
+        },
+    {
+          "name": "distance_down",
+          "type": "DoubleSpinBox",
+          "title": "Расстояние до нижней границы, мс",
+          "default": 10,
+          "min": 0.1,
+          "max": 100
+        }
+    ]
+  }
+}
