@@ -1,6 +1,6 @@
 {
   "config": {
-    "application": "cubeHorizontsCalculation",
+    "application": "Attributes1Horizon",
     "category": [ "Applications" ],
     "parameters_template": [
         { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "LineEdit" },
