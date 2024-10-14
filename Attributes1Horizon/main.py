@@ -76,9 +76,9 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, di
             job.log_progress("calculation", completed_frag*100 // total_frag)
             np.nan_to_num(new_zr, nan=MAXFLOAT, copy=False)
  
-    return new_zr
+    return np.vstack((hdata[None, :, :], new_zr[None, :, :]))
 
-class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
+class Attributes1Horizon(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
         super().__init__(in_name_par="Input Seismic3D Names", 
                 out_name_par="New Name", out_names=[])
@@ -87,17 +87,18 @@ class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
         raise NotImplementedError("Shouldn't be called in this application!")
 
 if __name__ == "__main__":
-    LOG.debug(f"Starting job ExampleHor1")
+    LOG.debug(f"Starting job Attributes1Horizon")
     tm_start = time.time()
-    job = cubeHorizontsCalculation()
+    job = Attributes1Horizon()
     attribute = job.description["attribute"]
     distance_up = job.description["distance_up"]
     distance_down = job.description["distance_down"]
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
-    f_out = job.session.create_horizon_3d_writer_as_other(hor, job.description["New Name"])
+    f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"])
     dt = compute_attribute(cube_in, hor, attribute, distance_up, distance_down)
     f_out.write_data(dt)
+    f_out.layers_names = ["T0", attribute]
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
