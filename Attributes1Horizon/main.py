@@ -8,6 +8,8 @@ from di_lib.di_app import Context
 from di_lib.seismic_cube import DISeismicCube
 from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
+from typing import List
+
 import time
 
 logging.basicConfig(level=logging.DEBUG)
@@ -31,7 +33,7 @@ def linear_interpolate(y, z, zs):
     except:
         return np.nan
 
-def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, distance_up, distance_down) -> Optional[np.ndarray]:
+def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: List[str], distance_up, distance_down) -> Optional[np.ndarray]:
     
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata = hor_in.get_data()
@@ -39,7 +41,8 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, di
 
     cube_time = np.arange(cube_in.data_start, cube_in.data_start  + (cube_in.time_step/1000) * cube_in.n_samples, cube_in.time_step/1000)
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x,hdata)
-    new_zr = np.full((hdata.shape[0],hdata.shape[1]), np.nan)
+    # Note: Here we use the fact that since Py 3.6 dict is ordered dict
+    new_zr_all = {a: np.full((hdata.shape[0],hdata.shape[1]), np.nan) for a in attributes}
     total_frag = len(grid_real)
     completed_frag = 0
 
@@ -54,29 +57,29 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, di
             index_min = np.where((cube_time >= np.min(np.round(hdata1)) - 1) & (cube_time <= np.min(np.round(hdata1)) + 1))[0]
             cube_time_new = cube_time[index_min[0]-5:index_max[0]+5]
             fr = cube_in.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0]-5,(index_max[0]+5) - (index_min[0]-5))
-            h_new = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan)
+            h_new_all = {a: np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan) for a in attributes}
             for i in range(grid_hor.shape[0]):
                 for j in range(grid_hor.shape[1]):
                     if grid_hor[i,j] <= 0.1 * MAXFLOAT:
                         if np.size(fr) == 1:
                             continue
                         else:
-                            if "Amplitude" in attribute:
-                                h_new[i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
-                            if "Energy" in attribute:
+                            if "Amplitude" in attributes:
+                                h_new_all["Amplitude"][i,j] = linear_interpolate(fr[i,j,:], cube_time_new, grid_hor[i,j])
+                            if "Energy" in attributes:
                                 ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
                                 new_dist_up = int((distance_up)/(cube_in.time_step / 1000))
                                 new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
-                                h_new[i,j] = (np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2))/len(fr[i,j,ind - new_dist_down:ind + new_dist_up])
-    
-            new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
-            new_zr = new_zr.astype('float32')
+                                h_new_all["Energy"][i,j] = (np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2))/len(fr[i,j,ind - new_dist_down:ind + new_dist_up])
+            for a in attributes:
+                new_zr_all[a][grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
+                new_zr_all[a] = new_zr_all[a].astype('float32')
+                np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
             completed_frag += 1
             LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             job.log_progress("calculation", completed_frag*100 // total_frag)
-            np.nan_to_num(new_zr, nan=MAXFLOAT, copy=False)
  
-    return np.vstack((hdata[None, :, :], new_zr[None, :, :]))
+    return np.vstack([hdata[None, :, :]] + [new_zr[None, :, :] for new_zr in new_zr_all.values()])
 
 class Attributes1Horizon(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
@@ -90,15 +93,15 @@ if __name__ == "__main__":
     LOG.debug(f"Starting job Attributes1Horizon")
     tm_start = time.time()
     job = Attributes1Horizon()
-    attribute = job.description["attribute"]
+    attributes = job.description["attributes"]
     distance_up = job.description["distance_up"]
     distance_down = job.description["distance_down"]
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
     f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"])
-    dt = compute_attribute(cube_in, hor, attribute, distance_up, distance_down)
+    dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down)
     f_out.write_data(dt)
-    f_out.layers_names = ["T0", attribute]
+    f_out.layers_names = ["T0"] + attributes
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
