@@ -68,7 +68,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, di
                                 new_dist_up = int((distance_up)/(cube_in.time_step / 1000))
                                 new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
                                 h_new[i,j] = (np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2))/len(fr[i,j,ind - new_dist_down:ind + new_dist_up])
-                            if "Effective_ampl" in attribute:
+                            if "Effective_amp" in attribute:
                                 ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
                                 new_dist_up = int((radius)/(cube_in.time_step / 1000))
                                 new_dist_down = int((radius)/(cube_in.time_step / 1000))
