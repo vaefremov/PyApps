@@ -68,7 +68,11 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attribute, di
                                 new_dist_up = int((distance_up)/(cube_in.time_step / 1000))
                                 new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
                                 h_new[i,j] = (np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2))/len(fr[i,j,ind - new_dist_down:ind + new_dist_up])
-    
+                            if "Effective_ampl" in attribute:
+                                ind = int(np.round(grid_hor[i,j]-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
+                                new_dist_up = int((radius)/(cube_in.time_step / 1000))
+                                new_dist_down = int((radius)/(cube_in.time_step / 1000))
+                                h_new[i,j] = np.sqrt((np.sum(fr[i,j,ind - new_dist_down:ind + new_dist_up]**2)))/len(fr[i,j,ind - new_dist_down:ind + new_dist_up])
             new_zr[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new
             new_zr = new_zr.astype('float32')
             completed_frag += 1
@@ -93,6 +97,7 @@ if __name__ == "__main__":
     attribute = job.description["attribute"]
     distance_up = job.description["distance_up"]
     distance_down = job.description["distance_down"]
+    radius = job.description["radius"]
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)

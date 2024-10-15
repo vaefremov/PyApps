@@ -11,7 +11,15 @@
           "type": "ComboBox",
           "title": "Attribute",
           "default": "Amplitude",
-          "items": ["Amplitude","Energy"]
+          "items": ["Amplitude","Energy","Effective_amp"]
+        },
+    {
+          "name": "radius",
+          "type": "DoubleSpinBox",
+          "title": "Полуокно интервала, мс",
+          "default": 32,
+          "min": 0.1,
+          "max": 100
         },
     {
           "name": "distance_up",
@@ -21,6 +29,7 @@
           "min": 0.1,
           "max": 100
         },
+
     {
           "name": "distance_down",
           "type": "DoubleSpinBox",
@@ -29,6 +38,7 @@
           "min": 0.1,
           "max": 100
         }
+        
     ]
   }
 }
