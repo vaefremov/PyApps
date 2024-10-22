@@ -7,10 +7,10 @@
         { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes", "type": "ListView" },
         { "name": "New Name", "type": "LineEdit", "default": "Result" },
         {
-          "name": "attribute",
-          "type": "ComboBox",
-          "title": "Attribute",
-          "default": "Amplitude",
+          "name": "attributes",
+          "type": "ListView",
+          "title": "Attributes",
+          "singleSelection": false,
           "items": ["Amplitude","Energy","Effective_amp","Abs_a/effective_amp","Pow_a/effective_amp"]
         },
     {
