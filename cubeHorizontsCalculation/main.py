@@ -110,19 +110,19 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
                 continue
             else:
                 #if grid_hor[i,j] <= 0.1 * MAXFLOAT:
-                if "Amplitude" or "Pow_a/effective_amp" or "Abs_a/effective_amp" in attribute:
+                if "Amplitude" or "Pow_a/effective_amp" or "Abs_a/effective_amp" in attributes:
                     h_new_all["Amplitude"] = linear_interpolate (fr, cube_time_new, grid_hor)
          
-                if "Energy" in attribute:
+                if "Energy" in attributes:
                     h_new_all["Energy"] = mean_power(fr,indxs,new_dist_down,new_dist_up)
                     
-                if "Effective_amp" or "Pow_a/effective_amp" or "Abs_a/effective_amp" in attribute:
+                if "Effective_amp" or "Pow_a/effective_amp" or "Abs_a/effective_amp" in attributes:
                     h_new_all["Effective_amp"] = effective_amplitude(fr,indxs,radius_samples,radius_samples)
 
-                if "Pow_a/effective_amp" in attribute:
+                if "Pow_a/effective_amp" in attributes:
                     h_new_all["Pow_a/effective_amp"] = np.power(h_new_all["Amplitude"],2)/h_new_all["Effective_amp"]
 
-                if "Abs_a/effective_amp" in attribute:
+                if "Abs_a/effective_amp" in attributes:
                     h_new_all["Abs_a/effective_amp"] = np.fabs(h_new_all["Amplitude"])/h_new_all["Effective_amp"]
 
             for a in attributes:
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     LOG.debug(f"Starting job ExampleHor1")
     tm_start = time.time()
     job = cubeHorizontsCalculation()
-    attribute = job.description["attribute"]
+    attributes = job.description["attributes"]
     distance_up = job.description["distance_up"]
     distance_down = job.description["distance_down"]
     radius = job.description["radius"]
@@ -156,7 +156,8 @@ if __name__ == "__main__":
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
     f_out = job.session.create_horizon_3d_writer_as_other(hor, job.description["New Name"])
-    dt = compute_attribute(cube_in, hor, attribute, distance_up, distance_down)
+    dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down,radius)
     f_out.write_data(dt)
+    f_out.layers_names = ["T0"] + attributes
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
