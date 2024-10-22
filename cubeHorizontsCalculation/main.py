@@ -69,7 +69,7 @@ def effective_amplitude(a, ind, up_sample, down_sample):
                 e_a[i,j] = np.sqrt(np.sum(a[i,j,ind_ - down_sample:ind_ + up_sample + 1]**2))/len_a
     return e_a
     
-def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: List[str], distance_up, distance_down) -> Optional[np.ndarray]:
+def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: List[str], distance_up, distance_down, radius) -> Optional[np.ndarray]:
     
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata = hor_in.get_data()
@@ -96,7 +96,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
             new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
             radius_samples = max(new_dist_up, new_dist_down ) 
 
-            if "Effective_amp" in attribute:
+            if "Effective_amp" in attributes:
                 radius_samples = max(new_dist_up, new_dist_down, int((radius) / (cube_in.time_step / 1000)))
         
             cube_time_new = cube_time[index_min[0] - radius_samples : index_max[0] + radius_samples]  
