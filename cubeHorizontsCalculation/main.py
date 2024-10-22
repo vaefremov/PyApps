@@ -156,7 +156,7 @@ if __name__ == "__main__":
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
     f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"])
-    dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down,radius)
+    dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down, radius)
     f_out.write_data(dt)
     f_out.layers_names = ["T0"] + attributes
 
