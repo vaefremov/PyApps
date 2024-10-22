@@ -25,7 +25,7 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x, hdata):
     res1 = [(i, j, min(n_i-1, i+inc_i-1), min(n_x-1, j+inc_x-1)) for i in range(min_i, n_i-1, inc_i) for j in range(min_x, n_x-1, inc_x)]
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
-@njit 
+#@njit 
 def linear_interpolate(y, z, zs):
     y_out = np.zeros((y.shape[0],y.shape[1]))
     for i in range(y.shape[0]):
