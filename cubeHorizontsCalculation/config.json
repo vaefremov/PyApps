@@ -11,7 +11,7 @@
           "type": "ComboBox",
           "title": "Attribute",
           "default": "Amplitude",
-          "items": ["Amplitude","Energy","Effective_amp"]
+          "items": ["Amplitude","Energy","Effective_amp","Abs_a/effective_amp","Pow_a/effective_amp"]
         },
     {
           "name": "radius",
