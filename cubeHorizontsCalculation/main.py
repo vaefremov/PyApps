@@ -133,7 +133,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
             LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             job.log_progress("calculation", completed_frag*100 // total_frag)
             
- 
+    np.nan_to_num(hdata, nan=MAXFLOAT, copy=False)
     return np.vstack([hdata[None, :, :]] + [new_zr[None, :, :] for new_zr in new_zr_all.values()])
 
 class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
