@@ -32,8 +32,8 @@ def linear_interpolate(y, z, zs):
         for j in range(y.shape[1]):
             good_idx = np.where( np.isfinite(y[i,j,:]) )
             try :
-                y_out[i,j] = interp1d(z[good_idx], y[i,j,good_idx], axis=-1, bounds_error=False )(zs[i,j])
-                
+                #y_out[i,j] = interp1d(z[good_idx], y[i,j,good_idx], axis=-1, bounds_error=False )(zs[i,j])
+                y_out[i,j] = np.interp(zs[i,j], z[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan )
             except:
                 y_out[i,j] = np.nan
     return y_out
