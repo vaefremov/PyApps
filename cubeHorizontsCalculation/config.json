@@ -11,7 +11,7 @@
           "type": "ListView",
           "title": "Attributes",
           "singleSelection": false,
-          "items": ["Amplitude","Energy","Effective_amp","Abs_a/effective_amp","Pow_a/effective_amp"]
+          "items": ["Amplitude","Energy","Effective_amp","Abs_a_div_effective_amp","Pow_a_div_effective_amp"]
         },
     {
           "name": "radius",
