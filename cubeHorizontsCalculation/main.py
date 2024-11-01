@@ -119,10 +119,10 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
                 if "Effective_amp" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
                     h_new_all["Effective_amp"] = effective_amplitude(fr,indxs,radius_samples,radius_samples)
 
-                if "Pow_a/effective_amp" in attributes:
+                if "Pow_a_div_effective_amp" in attributes:
                     h_new_all["Pow_a_div_effective_amp"] = np.power(h_new_all["Amplitude"],2)/h_new_all["Effective_amp"]
 
-                if "Abs_a/effective_amp" in attributes:
+                if "Abs_a_div_effective_amp" in attributes:
                     h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"])/h_new_all["Effective_amp"]
 
             for a in attributes:
