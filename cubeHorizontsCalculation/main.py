@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 import logging
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.fft import rfft, rfftfreq
 from numba import njit
 
 from di_lib import di_app
@@ -68,12 +69,82 @@ def effective_amplitude(a, ind, up_sample, down_sample):
                 len_a = len_a if len_a!=0 else 1
                 e_a[i,j] = np.sqrt(np.sum(a[i,j,ind_ - down_sample:ind_ + up_sample + 1]**2))/len_a
     return e_a
+def autocorrelation_period(a,ind, up_sample, down_sample, dt):
+    a_p = np.zeros((a.shape[0],a.shape[1]))
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+
+            if np.isnan(ind[i,j]) or np.isnan(a[i,j,int(ind[i,j])]):
+                a_p[i,j] = np.nan
+           
+            else:
+                ind_ = int(ind[i,j])
+                interval = a[i,j,ind_ - down_sample:ind_ + up_sample + 1]
+                
+                interval = interval[~np.isnan(interval)]
+                interval = interval - np.mean(interval)
+                if interval.shape[0] < 10:
+                    a_p[i,j]  = np.nan
+                else:
+                    ind_half_period = np.argmin(np.correlate(interval, interval, 'same')[interval.shape[0]//2:]) 
+
+                    if ind_half_period < 5 :
+                        a_p[i,j]  = np.nan
+                    else:
+                        a_p[i,j] = ind_half_period * 2 * dt
+    return a_p
+
+def spectral_energy(a, ind, up_sample, down_sample, f_min, f_max, dt):
+    s_e = np.zeros((a.shape[0],a.shape[1]))
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+
+            if np.isnan(ind[i,j]) or np.isnan(a[i,j,int(ind[i,j])]):
+                s_e[i,j] = np.nan
+           
+            else:
+                ind_ = int(ind[i,j])
+                interval = a[i,j,ind_ - down_sample:ind_ + up_sample + 1]
+                interval = interval[~np.isnan(interval)]
+                
+                len_a = interval.shape[0]
+                len_a = len_a if len_a!=0 else 1
+                if len_a < 5:
+                    s_e[i,j]  = np.nan
+                else:
+                    spectr = np.abs(rfft(interval))[int(f_min*len_a*dt):int(f_max*len_a*dt)]
+                    s_e[i,j] = np.sum(spectr**2)
+    return s_e
+
+def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
+    m_f = np.zeros((a.shape[0],a.shape[1]))
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+
+            if np.isnan(ind[i,j]) or np.isnan(a[i,j,int(ind[i,j])]):
+                m_f[i,j] = np.nan
+           
+            else:
+                ind_ = int(ind[i,j])
+                interval = a[i,j,ind_ - down_sample:ind_ + up_sample + 1]
+                interval = interval[~np.isnan(interval)]
+                len_a = interval.shape[0]
+                len_a = len_a if len_a!=0 else 1
+                if len_a < 5:
+                    m_f[i,j]  = np.nan
+                else:
+                    spectr = np.abs(rfft(interval))[int(f_min*len_a*dt):int(f_max*len_a*dt)]
+                    freqs = rfftfreq(len_a, dt)[int(f_min*len_a*dt):int(f_max*len_a*dt)]
+                
+                    m_f[i,j] = np.dot(spectr,freqs)/np.sum(freqs)
+    return m_f
     
 def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: List[str], distance_up, distance_down, radius) -> Optional[np.ndarray]:
     
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata = hor_in.get_data()
     hdata = np.where((hdata>= 0.1*MAXFLOAT) | (hdata== np.inf), np.nan, hdata)
+    z_step = 0.002
 
     cube_time = np.arange(cube_in.data_start, cube_in.data_start  + (cube_in.time_step/1000) * cube_in.n_samples, cube_in.time_step/1000)
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x,hdata)
@@ -124,7 +195,10 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
 
                 if "Abs_a_div_effective_amp" in attributes:
                     h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"])/h_new_all["Effective_amp"]
-
+                if "autocorrelation_period" in attributes:
+                    h_new_all["autocorrelation_period"] = autocorrelation_period(fr, indxs, new_dist_down, new_dist_up, z_step)
+                if "mean_freq" in attributes:
+                    h_new_all["mean_freq"] = mean_freq(fr, indxs, new_dist_down, new_dist_up, min_freq, max_freq, z_step)
             for a in attributes:
                 new_zr_all[a][grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] = h_new_all[a]
                 new_zr_all[a] = new_zr_all[a].astype('float32')
@@ -152,6 +226,9 @@ if __name__ == "__main__":
     distance_up = job.description["distance_up"]
     distance_down = job.description["distance_down"]
     radius = job.description["radius"]
+    min_freq = job.description["min_freq"]
+    max_freq = job.description["max_freq"]
+    intermediate_freq = job.description["intermediate_freq"]
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
