@@ -11,17 +11,9 @@
           "type": "ListView",
           "title": "Attributes",
           "singleSelection": false,
-          "items": ["Amplitude","Energy","Effective_amp","Abs_a_div_effective_amp","Pow_a_div_effective_amp",
-          "autocorrelation_period","spectral_energy","mean_freq","signal_compression","left_spectral_area","right_spectral_area",
-        "absorption_Ssw_Sw","absorption_Ssw_Sww"]
-        },
-    {
-          "name": "radius",
-          "type": "DoubleSpinBox",
-          "title": "Полуокно интервала, мс",
-          "default": 32,
-          "min": 0.1,
-          "max": 100
+          "items": ["Amplitude", "Energy", "Effective_amp", "Abs_a_div_effective_amp", "Pow_a_div_effective_amp",
+          "autocorrelation_period", "spectral_energy", "mean_freq", "signal_compression", "left_spectral_area", "right_spectral_area",
+        "absorption_Ssw_Sw", "absorption_Ssw_Sww"]
         },
     {
           "name": "distance_up",
@@ -45,7 +37,7 @@
           "type": "DoubleSpinBox",
           "title": "Нижняя частота, Гц",
           "default": 0,
-          "min": 0.1,
+          "min": 0,
           "max": 10000
         },
     {
@@ -57,10 +49,10 @@
           "max": 10000
         },
     {
-          "name": "intermediate_freq",
+          "name": "bearing_freq",
           "type": "DoubleSpinBox",
           "title": "Опорная частота, Гц",
-          "default": 50,
+          "default": 40,
           "min": 0.1,
           "max": 10000
         }
