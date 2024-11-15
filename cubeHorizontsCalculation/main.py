@@ -286,13 +286,13 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
                 if "signal_compression" in attributes:
                     h_new_all["signal_compression"] = signal_compression(fr, indxs, new_dist_down, new_dist_up, min_freq, max_freq, z_step)
 
-                if "left_spectral_area" or "spectral_energy"in attributes:
+                if "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
                     h_new_all["left_spectral_area"] = left_spectral_area(fr, indxs, new_dist_down, new_dist_up, min_freq,  bearing_freq, z_step)
 
-                if "right_spectral_area" or  "spectral_energy" in attributes:
+                if "right_spectral_area" or  "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
                     h_new_all["right_spectral_area"] = right_spectral_area(fr, indxs, new_dist_down, new_dist_up,  bearing_freq, max_freq, z_step)
 
-                if "spectral_energy" in attributes:
+                if "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
                     h_new_all["spectral_energy"] = h_new_all["left_spectral_area"] + h_new_all["right_spectral_area"]
                     
                 if "absorption_Ssw_Sw" in attributes:
