@@ -106,27 +106,7 @@ def autocorrelation_period(a,ind, up_sample, down_sample, dt):
                         a_p[i,j] = ind_half_period * 2 * dt
     return a_p
 
-def spectral_energy(a, ind, up_sample, down_sample, f_min, f_max, dt):
-    s_e = np.zeros((a.shape[0],a.shape[1]))
-    for i in range(a.shape[0]):
-        for j in range(a.shape[1]):
 
-            if np.isnan(ind[i,j]) or np.isnan(a[i,j,int(ind[i,j])]):
-                s_e[i,j] = np.nan
-           
-            else:
-                ind_ = int(ind[i,j])
-                interval = a[i,j,ind_ - down_sample:ind_ + up_sample + 1]
-                interval = interval[~np.isnan(interval)]
-                
-                len_a = interval.shape[0]
-                len_a = len_a if len_a!=0 else 1
-                if len_a < 5:
-                    s_e[i,j]  = np.nan
-                else:
-                    spectr = np.abs(rfft(interval))[int(f_min * len_a * dt):int(f_max * len_a * dt)]
-                    s_e[i,j] = np.sum(spectr**2)
-    return s_e
 
 def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
     m_f = np.zeros((a.shape[0],a.shape[1]))
@@ -147,7 +127,8 @@ def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
                 else:
                     spectr = np.abs(rfft(interval))[int(f_min * len_a * dt):int(f_max * len_a * dt)]
                     freqs = rfftfreq(len_a, dt)[int(f_min * len_a * dt):int(f_max * len_a * dt)]
-                
+                    if f_min == 0.:
+                        spectr[0] = 0
                     m_f[i,j] = np.dot(spectr, freqs) / np.sum(freqs)
     return m_f
 
@@ -171,7 +152,8 @@ def signal_compression(a, ind, up_sample, down_sample, f_min, f_max, dt):
                     interval = taper_fragment(interval)
                    
                     power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
-                
+                    if f_min == 0.:
+                        power[0] = 0
                     s_c[i,j] = np.sum(power) / ((f_max - f_min) * np.max(power))
     return s_c
 
@@ -195,7 +177,8 @@ def left_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
                     interval = taper_fragment(interval)
                    
                     power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
-                
+                    if f_min == 0.:
+                        power[0] = 0
                     l_sa[i,j] = np.sum(power)
     return l_sa
 
@@ -219,7 +202,8 @@ def right_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
                     interval = taper_fragment(interval)
                    
                     power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
-                
+                    if f_min == 0.:
+                        power[0] = 0
                     r_sa[i,j] = np.sum(power)
     return r_sa
 
