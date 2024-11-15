@@ -196,7 +196,7 @@ def left_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
                    
                     power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
                 
-                    l_sa[i,j] = np.sum(power) / (f_max - f_min) * np.max(power)
+                    l_sa[i,j] = power
     return l_sa
 
 def right_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
@@ -220,7 +220,7 @@ def right_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
                    
                     power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
                 
-                    r_sa[i,j] = np.sum(power) / (f_max - f_min) * np.max(power)
+                    r_sa[i,j] = power
     return r_sa
 
 def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: List[str], distance_up, distance_down, min_freq, max_freq, bearing_freq) -> Optional[np.ndarray]:
