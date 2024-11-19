@@ -99,7 +99,8 @@ def autocorrelation_period(a,ind, up_sample, down_sample, dt):
                 if interval.shape[0] < 5:
                     a_p[i,j]  = np.nan
                 else:
-                    ind_half_period = np.argmin(np.correlate(interval, interval, 'full')[interval.shape[0]-1:]) 
+                    corr = np.correlate(interval, interval, 'full')[interval.shape[0]-1:]
+                    ind_half_period = np.argmax(np.sign(np.diff(corr))) 
 
                     if ind_half_period < 5 or ind_half_period > interval.shape[0] // 2:
                         a_p[i,j]  = np.nan
