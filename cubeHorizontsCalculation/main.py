@@ -63,7 +63,7 @@ def mean_power(a, ind, up_sample, down_sample):
                 ind_ = int(ind[i,j])
                 len_a = len(a[i,j,ind_ - down_sample:ind_ + up_sample + 1])
                 len_a = len_a if len_a!=0 else 1
-                m_p[i,j] = np.sum(a[i,j,ind_ - down_sample:ind_ + up_sample + 1]**2) / len_a
+                m_p[i,j] = np.sum((a[i,j,ind_ - down_sample:ind_ + up_sample + 1]**2)) / len_a
     return m_p
 
 @njit       
@@ -79,8 +79,9 @@ def effective_amplitude(a, ind, up_sample, down_sample):
                 ind_ = int(ind[i,j])
                 len_a = len(a[i,j,ind_ - down_sample:ind_ + up_sample + 1])
                 len_a = len_a if len_a!=0 else 1
-                e_a[i,j] = np.sqrt(np.sum(a[i,j,ind_ - down_sample:ind_ + up_sample + 1]**2)) / len_a
+                e_a[i,j] = np.sqrt(np.sum((a[i,j,ind_ - down_sample:ind_ + up_sample + 1])**2)) / len_a
     return e_a
+
 def autocorrelation_period(a,ind, up_sample, down_sample, dt):
     a_p = np.zeros((a.shape[0],a.shape[1]))
     for i in range(a.shape[0]):
@@ -95,12 +96,12 @@ def autocorrelation_period(a,ind, up_sample, down_sample, dt):
                 
                 interval = interval[~np.isnan(interval)]
                 interval = interval - np.mean(interval)
-                if interval.shape[0] < 10:
+                if interval.shape[0] < 5:
                     a_p[i,j]  = np.nan
                 else:
-                    ind_half_period = np.argmin(np.correlate(interval, interval, 'same')[interval.shape[0]//2:]) 
+                    ind_half_period = np.argmin(np.correlate(interval, interval, 'full')[interval.shape[0]-1:]) 
 
-                    if ind_half_period < 5 :
+                    if ind_half_period < 5 or ind_half_period > interval.shape[0] // 2:
                         a_p[i,j]  = np.nan
                     else:
                         a_p[i,j] = ind_half_period * 2 * dt
@@ -109,6 +110,7 @@ def autocorrelation_period(a,ind, up_sample, down_sample, dt):
 
 
 def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
+    global zero_samples
     m_f = np.zeros((a.shape[0],a.shape[1]))
     for i in range(a.shape[0]):
         for j in range(a.shape[1]):
@@ -125,11 +127,12 @@ def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
                 if len_a < 5:
                     m_f[i,j]  = np.nan
                 else:
-                    spectr = np.abs(rfft(interval))[int(f_min * len_a * dt):int(f_max * len_a * dt)]
-                    freqs = rfftfreq(len_a, dt)[int(f_min * len_a * dt):int(f_max * len_a * dt)]
+                    interval = taper_fragment(interval)
+                    spectr = np.abs(rfft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)]
+                    freqs = rfftfreq(len_a + zero_samples, dt)[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)]
                     if f_min == 0.:
                         spectr[0] = 0
-                    m_f[i,j] = np.dot(spectr, freqs) / np.sum(freqs)
+                    m_f[i,j] = np.dot(spectr, freqs) / np.sum(spectr)
     return m_f
 
 def signal_compression(a, ind, up_sample, down_sample, f_min, f_max, dt):
