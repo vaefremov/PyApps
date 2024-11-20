@@ -50,6 +50,32 @@ def linear_interpolate(y, z, zs):
             except:
                 y_out[i,j] = np.nan
     return y_out
+def mean_amplitude(a, ind, up_sample, down_sample):
+    m_a = np.zeros((a.shape[0],a.shape[1]))
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+
+            if np.isnan(ind[i,j]) or np.isnan(a[i,j,int(ind[i,j])]):
+                m_a[i,j] = np.nan
+           
+            else:
+                ind_ = int(ind[i,j])
+                m_a[i,j] = np.mean(a[i,j,ind_ - down_sample:ind_ + up_sample + 1])
+    return m_a
+
+def sum_amplitude(a, ind, up_sample, down_sample):
+    s_a = np.zeros((a.shape[0],a.shape[1]))
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+
+            if np.isnan(ind[i,j]) or np.isnan(a[i,j,int(ind[i,j])]):
+                s_a[i,j] = np.nan
+           
+            else:
+                ind_ = int(ind[i,j])
+                s_a[i,j] = np.sum(a[i,j,ind_ - down_sample:ind_ + up_sample + 1])
+    return s_a
+
 @njit 
 def mean_power(a, ind, up_sample, down_sample):
     m_p = np.zeros((a.shape[0],a.shape[1]))
@@ -102,13 +128,11 @@ def autocorrelation_period(a,ind, up_sample, down_sample, dt):
                     corr = np.correlate(interval, interval, 'full')[interval.shape[0]-1:]
                     ind_half_period = np.argmax(np.sign(np.diff(corr))) 
 
-                    if ind_half_period < 5 or ind_half_period > interval.shape[0] // 2:
+                    if ind_half_period < 5 or ind_half_period >= interval.shape[0] / 2:
                         a_p[i,j]  = np.nan
                     else:
                         a_p[i,j] = ind_half_period * 2 * dt
     return a_p
-
-
 
 def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
     global zero_samples
@@ -261,6 +285,12 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
 
                 if "Pow_a_div_effective_amp" in attributes:
                     h_new_all["Pow_a_div_effective_amp"] = np.power(h_new_all["Amplitude"],2) / h_new_all["Effective_amp"]
+
+                if "mean_amplitude" in attributes:
+                    h_new_all["mean_amplitude"] = mean_amplitude(fr, indxs, new_dist_down, new_dist_up)
+
+                if "sum_amplitude" in attributes:
+                    h_new_all["sum_amplitude"] = sum_amplitude(fr, indxs, new_dist_down, new_dist_up)
 
                 if "Abs_a_div_effective_amp" in attributes:
                     h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"]) / h_new_all["Effective_amp"]
