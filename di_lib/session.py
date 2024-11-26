@@ -114,8 +114,8 @@ class DISession:
         return line_writer
 
 
-    def list_attributes_3d(self):
-        with requests.get(f"{self.server_url}/horizons/3d/list/{self.project_id}/") as resp:
+    def list_attributes_2d(self):
+        with requests.get(f"{self.server_url}/attributes/3d/list/{self.project_id}/") as resp:
             if resp.status_code != 200:
                 LOG.error("Cant' get list of 3d attributes: %s", resp.status_code)
                 raise RuntimeError(f"Cant' get list of 3d attributes: {resp.status_code=}")
@@ -161,15 +161,15 @@ class DISession:
         attr_writer._create()
         return attr_writer
 
-    def get_attribute_2d_writer(self, geometry_name: str, name: str) -> DIAttribute2D:
-        hor = DIAttribute2D(self.project_id, geometry_name, name)
+    def get_attribute_2d_writer(self, geometry_name: str, name: str, name2: str) -> DIAttribute2D:
+        hor = DIAttribute2D(self.project_id, geometry_name, name, name2)
         hor.server_url = self.server_url
         hor.token = self.token
         hor._read_info()
         return hor
 
-    def create_attribute_2d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, **kw) -> DIAttribute2D:
-        attr_writer = DIAttribute2D(self.project_id, original_attribute.geometry_name, name)
+    def create_attribute_2d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, name2: str, **kw) -> DIAttribute2D:
+        attr_writer = DIAttribute2D(self.project_id, original_attribute.geometry_name, name, name2)
         attr_writer.server_url = self.server_url
         attr_writer.token = self.token
         original_info = original_attribute._get_info()
@@ -183,8 +183,8 @@ class DISession:
         attr_writer._create()
         return attr_writer
         
-    def create_attribute_2d_writer_for_cube(self,  original_cube: DISeismicCube, name: str, **kw) -> DIAttribute2D:
-        attr_writer = DIAttribute2D(self.project_id, original_cube.geometry_name, name)
+    def create_attribute_2d_writer_for_cube(self,  original_cube: DISeismicCube, name: str, name2: str, **kw) -> DIAttribute2D:
+        attr_writer = DIAttribute2D(self.project_id, original_cube.geometry_name, name, name2)
         attr_writer.server_url = self.server_url
         attr_writer.token = self.token
         original_info = original_cube._get_info()
@@ -208,7 +208,7 @@ class DISession:
         return attr_writer
 
     def delete_attribute_by_id(self, attr_id: int):
-        with requests.delete(f'{self.server_url}/horizons/3d/delete/{attr_id}/', headers={"Content-Type": "application/json", "x-di-authorization": self.token}) as resp:
+        with requests.delete(f'{self.server_url}/attributes/3d/delete/{attr_id}/', headers={"Content-Type": "application/json", "x-di-authorization": self.token}) as resp:
             if resp.status_code != 200:
                 LOG.error("Delete failed: %s  / %s", resp.status_code, resp.content)
                 raise RuntimeError(f"Delete failed: {resp.status_code=}")
