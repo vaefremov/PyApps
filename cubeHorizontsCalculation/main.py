@@ -72,7 +72,7 @@ def sum_amplitude(a, ind, up_sample, down_sample):
                 s_a[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 s_a[i,j] = np.sum(a[i,j,ind_ - up_sample:ind_ + down_sample + 1])
     return s_a
 
@@ -86,7 +86,7 @@ def mean_power(a, ind, up_sample, down_sample):
                 m_p[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 len_a = len(a[i,j,ind_ - up_sample:ind_ + down_sample + 1])
                 len_a = len_a if len_a!=0 else 1
                 m_p[i,j] = np.sum((a[i,j,ind_ - down_sample:ind_ + up_sample + 1]**2)) / len_a
@@ -102,7 +102,7 @@ def effective_amplitude(a, ind, up_sample, down_sample):
                 e_a[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 len_a = len(a[i,j,ind_ - up_sample:ind_ + down_sample + 1])
                 len_a = len_a if len_a!=0 else 1
                 e_a[i,j] = np.sqrt(np.sum((a[i,j,ind_ - up_sample:ind_ + down_sample + 1])**2)) / len_a
@@ -117,7 +117,7 @@ def autocorrelation_period(a,ind, up_sample, down_sample, dt):
                 a_p[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 interval = a[i,j,ind_ - up_sample:ind_ + down_sample + 1]
                 
                 interval = interval[~np.isnan(interval)]
@@ -144,7 +144,7 @@ def mean_freq(a, ind, up_sample, down_sample, f_min, f_max, dt):
                 m_f[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 interval = a[i,j,ind_ - up_sample:ind_ + down_sample + 1]
                 interval = interval[~np.isnan(interval)]
                 len_a = interval.shape[0]
@@ -170,7 +170,7 @@ def signal_compression(a, ind, up_sample, down_sample, f_min, f_max, dt):
                 s_c[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 interval = a[i,j,ind_ - up_sample:ind_ + down_sample + 1]
                 interval = interval[~np.isnan(interval)]
                 len_a = interval.shape[0]
@@ -195,7 +195,7 @@ def left_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
                 l_sa[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 interval = a[i,j,ind_ - up_sample:ind_ + down_sample + 1]
                 interval = interval[~np.isnan(interval)]
                 len_a = interval.shape[0]
@@ -220,7 +220,7 @@ def right_spectral_area(a, ind, up_sample, down_sample, f_min, f_max, dt):
                 r_sa[i,j] = np.nan
            
             else:
-                ind_ = int(ind[i,j])
+                ind_ = ind[i,j]
                 interval = a[i,j,ind_ - up_sample:ind_ + down_sample + 1]
                 interval = interval[~np.isnan(interval)]
                 len_a = interval.shape[0]
@@ -265,7 +265,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
         
             cube_time_new = cube_time[index_min[0] - new_dist_up : index_max[0] + new_dist_down+1]  
     
-            indxs = np.round(grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]) 
+            indxs = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])).astype('int32') 
 
             fr = cube_in.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0]-new_dist_up,(index_max[0]+new_dist_down+1) - (index_min[0]-new_dist_up))
 
