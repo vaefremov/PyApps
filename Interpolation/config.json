@@ -4,6 +4,7 @@
       "category": [ "Applications" ],
       "parameters_template": [
           { "name": "Input Seismic3D Names", "inputDataType": "SeismicData3DGeoms|SeismicDataGeoms3DCubes", "type": "ListView" },
+          { "name": "Seismic2DGeometries", "inputDataType": "SeismicDataGeoms2DNames", "type": "CustomStringList" },
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
           { "name": "New Name", "type": "LineEdit", "default": "Interpolation" },
           {
