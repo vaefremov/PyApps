@@ -54,6 +54,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
               
         if self.type_interpolation == "linear":
             f_out = np.apply_along_axis(linear_interpolate, -1, f_in, z, zs)
+            f_out = f_out.astype('float32')
         elif self.type_interpolation == "cubic spline":              
             f_out = np.apply_along_axis(cubic_interpolate, -1, f_in, z, zs)
             f_out  = f_out.astype('float32')
