@@ -23,7 +23,7 @@
 
 {
     "program_name": "SeismicCalculation",
-    "job_description": {"Threads Count": 10, "formula": "Differ/x2", "result_name": "SeisCalc 1", "seismic_3d": ["geometry_cube\nDiffer\nx2"]},
+    "job_description": {"Threads Count": 10, "formula": "Differ/x2", "result_name": "SeisCalc 2", "seismic_3d": ["geometry_cube\nDiffer\nx2"]},
     "project_id": 19637259
 }
 
