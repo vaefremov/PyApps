@@ -35,7 +35,8 @@ def akima_interpolate(y, z, zs):
 
 class InterpolationZ (di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="Input Seismic3D Names", in_line_names_par="Input Seismic2D Names", 
+        super().__init__(in_name_par="Input Seismic3D Names", 
+                         in_line_geometries_par="Seismic2DGeometries", in_line_names_par="Input Seismic2D Names", 
                 out_name_par="New Name", out_names=["Interpolation"])
         
         # Input datasets names are converted to the agreed upon format 
@@ -53,6 +54,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
               
         if self.type_interpolation == "linear":
             f_out = np.apply_along_axis(linear_interpolate, -1, f_in, z, zs)
+            f_out = f_out.astype('float32')
         elif self.type_interpolation == "cubic spline":              
             f_out = np.apply_along_axis(cubic_interpolate, -1, f_in, z, zs)
             f_out  = f_out.astype('float32')

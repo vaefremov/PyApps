@@ -265,7 +265,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
         
             cube_time_new = cube_time[index_min[0] - new_dist_up : index_max[0] + new_dist_down+1]  
     
-            indxs = np.round(grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]) 
+            indxs = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
 
             fr = cube_in.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min[0]-new_dist_up,(index_max[0]+new_dist_down+1) - (index_min[0]-new_dist_up))
 
