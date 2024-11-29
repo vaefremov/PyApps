@@ -32,21 +32,22 @@ APPS=$(pull_check_updates)
 
 for a in $APPS
 do
-  if [ "$a" == "di_lib" ]
-  then
-    $BIN/deploy_lib.sh
-    echo $(date) "di_lib deployed"
-  else
-    if [ $(dirname $a) == "Old_programs" ]
-    then
-      echo "Skipped deployment: $a"
-    else
+  case $a in
+    Old_programs/*) 
+      echo "Skipped deployment: $a" 
+      ;;
+
+    di_lib) 
+      $BIN/deploy_lib.sh
+      echo $(date) "di_lib deployed"
+      ;;
+      
+    *) echo "Try deployment: $a"
       $BIN/deploy_app.sh $a
       if [ $? -eq 0 ]; then
         echo $(date) "App $a deployed"
       else
         echo "Error in deployment of $a"
       fi
-    fi
-  fi
+  esac
 done
