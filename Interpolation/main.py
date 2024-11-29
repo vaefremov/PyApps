@@ -69,7 +69,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
         return (f_out,)
 
 if __name__ == "__main__":
-    LOG.debug(f"Starting job")
+    LOG.debug(f"Starting  job")
     job = InterpolationZ()
     res_final = job.run()
     LOG.info(f"{res_final}")
