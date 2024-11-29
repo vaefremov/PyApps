@@ -37,7 +37,7 @@ do
     $BIN/deploy_lib.sh
     echo $(date) "di_lib deployed"
   else
-    if [ $(dirname  $(dirname $a)) == "Old_programs"]
+    if [ $(dirname  $(dirname $a)) == "Old_programs" ]
     then
       echo "Skipped deployment: $a"
     else
