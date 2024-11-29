@@ -37,11 +37,16 @@ do
     $BIN/deploy_lib.sh
     echo $(date) "di_lib deployed"
   else
-    $BIN/deploy_app.sh $a
-    if [ $? -eq 0 ]; then
-      echo $(date) "App $a deployed"
+    if [ $(dirname  $(dirname $a)) == "Old_programs"]
+    then
+      echo "Skipped deployment: $a"
     else
-      echo "Error in deployment of $a"
+      $BIN/deploy_app.sh $a
+      if [ $? -eq 0 ]; then
+        echo $(date) "App $a deployed"
+      else
+        echo "Error in deployment of $a"
+      fi
     fi
   fi
 done
