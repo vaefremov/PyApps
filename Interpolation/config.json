@@ -1,6 +1,6 @@
 {
     "config": {
-      "application": "Interpolation",
+      "application": "Интерполяция 3Д/2Д",
       "category": [ "Applications" ],
       "parameters_template": [
           { "name": "Input Seismic3D Names", "inputDataType": "SeismicData3DGeoms|SeismicDataGeoms3DCubes", "type": "ListView" },
