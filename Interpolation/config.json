@@ -1,6 +1,7 @@
 {
     "config": {
       "application": "Interpolation",
+      "application_ru_RU": "Интерполяция 3Д/2Д",
       "category": [ "Applications" ],
       "parameters_template": [
           { "name": "Input Seismic3D Names", "inputDataType": "SeismicData3DGeoms|SeismicDataGeoms3DCubes", "type": "ListView" },
@@ -8,9 +9,9 @@
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicData2DGeoms", "type": "ListView" },
           { "name": "New Name", "type": "LineEdit", "default": "Interpolation" },
           {
-        "name": "interpolation",
+        "name": "Interpolation",
         "type": "ComboBox",
-        "title": "interpolation",
+        "title": "Interpolation",
         "default": "linear",
         "items": ["linear","cubic spline","akima"]
       },

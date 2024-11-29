@@ -1,6 +1,7 @@
 {
     "config": {
       "application": "Coherence",
+      "application_ru_RU": "Когерентность 3Д/2Д",
       "category": [ "Applications" ],
       "parameters_template": [
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicDataGeoms2DNames", "collectChildren": true, "type": "ListView" },
