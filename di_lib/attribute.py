@@ -226,11 +226,12 @@ class DIAttribute2D(DIHorizon3DWriter):
                 resp_j = json.loads(resp.content)
                 LOG.info("Reply: %s", resp_j)
                 self.horizon_id = resp_j["id"]
+                self._layers_names = resp_j["layers_names"]
         except requests.exceptions.ConnectionError as ex:
             LOG.error("Exception during POST: %s", str(ex))
             raise ex
 
-    def get_data(self) -> Optional[np.ndarray]:
+    def get_all_data(self) -> Optional[np.ndarray]:
         """Reads layered data. Returns array with shape (nlayers, nx, ny).
         """
         url = f"{self.server_url}/attributes/3d/layers_data/{self.project_id}/{self.horizon_id}/"
@@ -245,16 +246,64 @@ class DIAttribute2D(DIHorizon3DWriter):
             gr_arr.shape = (nlayers, nx, ny)
             return gr_arr
 
+    def get_data(self) -> Optional[np.ndarray]:
+        """Reads attribute data (corresponds to layer 1). Returns array with shape (nx, ny).
+        """
+        url = f"{self.server_url}/attributes/3d/data/{self.project_id}/{self.horizon_id}/"
+        with requests.get(url, params={"layer_name": self._layers_names[1]}) as resp:
+            bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error("Request finished with error: %s", resp.status_code)
+            nx, ny = struct.unpack("<ii", raw_data[:8])
+            LOG.debug(f"{nx=}, {ny=}")
+            gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
+            gr_arr.shape = (nx, ny)
+            return gr_arr
+
     def write_data(self, data_array):
+        # make sure type of the input data is float32
+        if data_array.dtype != np.float32:
+            raise ValueError('Data type must be float32')
+        url = f"{self.server_url}/attributes/3d/update_attribute_data/{self.project_id}/{self.horizon_id}/"
+        nx, ny = data_array.shape
+        pref = struct.pack('<ii', nx, ny)
+        data = pref + data_array.tobytes()
+        res_status = 200
+        with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+            res_status = resp.status_code
+            if resp.status_code != 200:
+                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                return res_status
+            
+    def write_horizon_data(self, data_array):
+        # make sure type of the input data is float32
+        if data_array.dtype != np.float32:
+            raise ValueError('Data type must be float32')
+        url = f"{self.server_url}/attributes/3d/update_horizon_data/{self.project_id}/{self.horizon_id}/"
+        nx, ny = data_array.shape
+        pref = struct.pack('<ii', nx, ny)
+        data = pref + data_array.tobytes()
+        res_status = 200
+        with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+            res_status = resp.status_code
+            if resp.status_code != 200:
+                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                return res_status
+            
+    def write_all_data(self, data_array, layers_names):
         # make sure type of the input data is float32
         if data_array.dtype != np.float32:
             raise ValueError('Data type must be float32')
         url = f"{self.server_url}/attributes/3d/update_attribute_entire_data/{self.project_id}/{self.horizon_id}/"
         nlayers, nx, ny = data_array.shape
+        if len(layers_names) != nlayers:
+            raise ValueError(f'Number of layers names must be equal to layers number ({len(layers_names)} != {nlayers})')
+        self._layers_names = layers_names
         pref = struct.pack('<iii', nlayers, nx, ny)
         data = pref + data_array.tobytes()
         res_status = 200
-        with requests.post(url, data=data, params={"attributes_names": self._layers_names}, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+        with requests.post(url, data=data, params={"lnm": self._layers_names}, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error("Failed to store horizon data, response code %s", resp.status_code)
@@ -263,7 +312,3 @@ class DIAttribute2D(DIHorizon3DWriter):
     @property
     def layers_names(self):
         return self._layers_names
-
-    @layers_names.setter
-    def layers_names(self, layers_names: List[str]):
-        self._layers_names = layers_names
