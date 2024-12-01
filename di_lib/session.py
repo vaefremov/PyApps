@@ -168,7 +168,7 @@ class DISession:
         hor._read_info()
         return hor
 
-    def create_attribute_2d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, name2: str, **kw) -> DIAttribute2D:
+    def create_attribute_2d_writer_as_other(self, original_attribute: DIHorizon3D, name: str, name2: str, copy_horizon_data: bool=False, **kw) -> DIAttribute2D:
         attr_writer = DIAttribute2D(self.project_id, original_attribute.geometry_name, name, name2)
         attr_writer.server_url = self.server_url
         attr_writer.token = self.token
@@ -181,6 +181,9 @@ class DISession:
         new_info["min_ny"] = kw.get("min_ny", original_info["min_ny"])
         attr_writer._init_from_info(new_info)
         attr_writer._create()
+        if copy_horizon_data:
+            hor_dt = original_attribute.get_data()
+            attr_writer.write_horizon_data(hor_dt)
         return attr_writer
         
     def create_attribute_2d_writer_for_cube(self,  original_cube: DISeismicCube, name: str, name2: str, **kw) -> DIAttribute2D:
