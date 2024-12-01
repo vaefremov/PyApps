@@ -351,9 +351,10 @@ if __name__ == "__main__":
     cube_in = job.open_input_dataset()
     hor_name = job.description["Horizon"]
     hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
-    f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"])
     dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down, min_freq, max_freq, bearing_freq )
-    f_out.write_data(dt)
-    f_out.layers_names = ["T0"] + attributes
+    for i,attr_name in enumerate(attributes, 1):
+        f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"], attr_name)
+        # f_out.write_horizon_data(dt[0]) # Not needed, horizon data have been copied by create_attr
+        f_out.write_data(dt[i])
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
