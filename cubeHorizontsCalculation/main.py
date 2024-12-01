@@ -354,7 +354,7 @@ if __name__ == "__main__":
     dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down, min_freq, max_freq, bearing_freq )
     for i,attr_name in enumerate(attributes, 1):
         f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"], attr_name)
-        # f_out.write_horizon_data(dt[0]) # Not needed, horizon data have been copied by create_attr
+        f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
         f_out.write_data(dt[i])
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
