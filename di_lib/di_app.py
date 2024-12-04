@@ -454,7 +454,7 @@ class DiAppSeismic3D2D(DiApp):
 
         frag_i = Frag(*frag)
         frag_e = enlarge_fragment(Frag(*frag), self.margin)
-
+        LOG.info(f"Start processing {i} {frag_e=} {frag=}")
         tmp_f: Optional[np.ndarray] = c_in.get_fragment(*frag_e)
         if tmp_f is None:
             LOG.info(f"Skipped: {i} {frag_e=} {frag=}")
