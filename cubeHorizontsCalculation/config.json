@@ -16,6 +16,13 @@
           "autocorrelation_period", "spectral_energy", "mean_freq", "signal_compression", "left_spectral_area", "right_spectral_area",
         "absorption_Ssw_Sw", "absorption_Ssw_Sww"]
         },
+        {
+          "name": "interpolation",
+          "type": "ComboBox",
+          "title": "interpolation",
+          "default": "no interpolation",
+          "items": ["no interpolation","linear","cubic spline"]
+        },
     {
           "name": "distance_up",
           "type": "DoubleSpinBox",
