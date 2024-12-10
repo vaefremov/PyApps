@@ -83,7 +83,7 @@ def cubic_interpolate_traces(y, z, zs, up_sample, down_sample, t_step):
                     continue
     return y_out
 
-def cut_intervals(y, ind, up_sample, down_sample, t_step):
+def cut_intervals(y, ind, up_sample, down_sample):
     y_out = np.full((y.shape[0],y.shape[1],up_sample + down_sample+1), np.nan)
     for i in range(y.shape[0]):
         for j in range(y.shape[1]):
@@ -285,7 +285,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
             new_dist_up = int((distance_up)/(cube_in.time_step / 1000))
             new_dist_down = int((distance_down)/(cube_in.time_step / 1000))
         
-            cube_time_new = cube_time[index_min[0] - new_dist_up : index_max[0] + new_dist_down+1]  
+            cube_time_new = cube_time[index_min[0] - new_dist_up -1: index_max[0] + new_dist_down + 2]  
     
             indxs = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
 
@@ -294,7 +294,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
             h_new_all = {a: np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan) for a in attributes}
 
             if type_interpolation == "no interpolation":
-                fr_intv = cut_intervals(fr, indxs, new_dist_up, new_dist_down, cube_in.time_step / 1000)
+                fr_intv = cut_intervals(fr, indxs, new_dist_up, new_dist_down)
             if type_interpolation == "linear":
                 fr_intv = linear_interpolate_traces(fr, cube_time_new, grid_hor, new_dist_up, new_dist_down, cube_in.time_step / 1000)
             if type_interpolation == "cubic spline":

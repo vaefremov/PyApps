@@ -19,7 +19,7 @@
         {
           "name": "interpolation",
           "type": "ComboBox",
-          "title": "interpolation",
+          "title": "Интерполяция",
           "default": "no interpolation",
           "items": ["no interpolation","linear","cubic spline"]
         },
