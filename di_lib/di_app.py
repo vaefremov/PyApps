@@ -18,6 +18,9 @@ import functools
 import time
 import traceback
 
+from concurrent.futures import ProcessPoolExecutor, wait, Future
+
+
 LOG = logging.getLogger(__name__)
 
 class JobDescription(namedtuple("JobDescription", ["job_id", "project_id", "token", "server_url"])):
@@ -54,6 +57,19 @@ def main_sigint_handler_with_pool(pool, signum, frame):
         pool.terminate()
         LOG.info(f"Pool terminated")
     sys.exit(100)
+
+def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
+    LOG.info(f"Caught signal {signum} in main process")
+    if executor:
+        # pool.terminate()
+        executor.shutdown(wait=False)
+        LOG.info(f"Executor shutdown")
+    sys.exit(100)
+
+def init_process():
+    signal.signal(signal.SIGTERM, children_sigterm_handler)
+    signal.signal(signal.SIGINT, children_sigterm_handler)
+ 
 
 def enlarge_fragment(frag: Frag, marg: int) -> Frag:
     no_i_f = frag.no_i - marg
@@ -137,7 +153,7 @@ class DiApp(metaclass=abc.ABCMeta):
             return i, "SKIP"
         f_out = ()
         try:
-            f_out = f_out = self.compute((tmp_f,))
+            f_out = self.compute((tmp_f,))
         except Exception:
             traceback.print_exc()
             raise
@@ -171,34 +187,34 @@ class DiApp(metaclass=abc.ABCMeta):
         self.report()
         LOG.debug(f"job {self.job_id} starting")
 
-        signal.signal(signal.SIGTERM, children_sigterm_handler)
-        signal.signal(signal.SIGINT, children_sigterm_handler)
-
         t_start = time.perf_counter()
         job_params = self.description
         
-
-        pool = Pool(self.n_processes)
-        LOG.info(f"Processing pool created, size: {self.n_processes}")
-
         run_args = self.generate_process_arguments()
 
-        handlr = functools.partial(main_sigint_handler_with_pool, pool)
-        signal.signal(signal.SIGTERM, handlr)
-        signal.signal(signal.SIGINT, handlr)
+        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+            LOG.info(f"Executor created, size: {self.n_processes}")
 
-        res = []
-        for i in run_args:
-            res.append(pool.apply_async(self.process_fragment, i, callback=self.completion_callback))
+            handlr = functools.partial(main_sigint_handler_with_exec, executor)
+            signal.signal(signal.SIGTERM, handlr)
+            signal.signal(signal.SIGINT, handlr)
 
-        res_final = []
-        for r in res:
-            try:
-                res_final.append(r.get())
-            except Exception as ex:
-                res_final.append(f"Exception {ex}")
-        pool.close()
-        pool.join()
+            res: List[Future] = []
+            for i in run_args:
+                f = executor.submit(self.process_fragment, *i)
+                f.add_done_callback(self.completion_callback)
+                res.append(f)
+
+            LOG.info(f"Start waiting for completion")
+            wait(res)
+
+            res_final = []
+            for r in res:
+                try:
+                    res_final.append(r.result())
+                except Exception as ex:
+                    res_final.append(f"Exception {type(ex)} {ex}")
+
         t_end = time.perf_counter()
         LOG.info(f"Finished in {t_end-t_start} sec")
         return res_final
@@ -278,10 +294,6 @@ class DiAppSeismic3D(DiApp):
         
         w_out = self.create_output_datasets(c)
 
-        pool = Pool(self.n_processes)
-        LOG.info(f"Processing pool created, size: {self.n_processes}")
-
-        n_frags = 10
         grid = self.generate_optimal_grid(c)
         LOG.debug(f"{grid=}")
 
@@ -289,22 +301,32 @@ class DiAppSeismic3D(DiApp):
         self.total_frags = len(grid)
         run_args = [(i[0], c, w_out, i[1]) for i in enum_grid]
 
-        handlr = functools.partial(main_sigint_handler_with_pool, pool)
-        signal.signal(signal.SIGTERM, handlr)
-        signal.signal(signal.SIGINT, handlr)
+        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+            LOG.info(f"Executor created, size: {self.n_processes}")
 
-        res = []
-        for i in run_args:
-            res.append(pool.apply_async(self.process_fragment, i, callback=self.completion_callback))
 
-        res_final = []
-        for r in res:
-            try:
-                res_final.append(r.get())
-            except Exception as ex:
-                res_final.append(f"Exception {ex}")
-        pool.close()
-        pool.join()
+            handlr = functools.partial(main_sigint_handler_with_exec, executor)
+            signal.signal(signal.SIGTERM, handlr)
+            signal.signal(signal.SIGINT, handlr)
+
+            res: List[Future] = []
+            for i in run_args:
+                f = executor.submit(self.process_fragment, *i)
+                f.add_done_callback(self.completion_callback)
+                res.append(f)
+
+            wait(res)
+
+            res_final = []
+            for r in res:
+                try:
+                    res_process = r.result()
+                    res_final.append(res_process)
+                    LOG.info(f"Result obtained: {res_process}")
+                except Exception as ex:
+                    LOG.info(f"Exception occured: {type(ex)} {ex}")
+                    res_final.append(f"Exception {type(ex)} {ex}")
+                    
         t_end = time.perf_counter()
         LOG.info(f"Finished in {t_end-t_start} sec")
         return res_final
@@ -399,11 +421,6 @@ class DiAppSeismic3DMultiple(DiApp):
         self.cubes_in = cubes_in
         
         w_out = self.create_output_datasets()
-
-        pool = Pool(self.n_processes)
-        LOG.info(f"Processing pool created, size: {self.n_processes}")
-
-        n_frags = 10
         grid = self.generate_optimal_grid()
         LOG.debug(f"{grid=}")
 
@@ -411,22 +428,33 @@ class DiAppSeismic3DMultiple(DiApp):
         self.total_frags = len(grid)
         run_args = [(i[0], cubes_in, w_out, i[1]) for i in enum_grid]
 
-        handlr = functools.partial(main_sigint_handler_with_pool, pool)
-        signal.signal(signal.SIGTERM, handlr)
-        signal.signal(signal.SIGINT, handlr)
+        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+            LOG.info(f"Executor created, size: {self.n_processes}")
 
-        res = []
-        for i in run_args:
-            res.append(pool.apply_async(self.process_fragment, i, callback=self.completion_callback))
+            handlr = functools.partial(main_sigint_handler_with_exec, executor)
+            signal.signal(signal.SIGTERM, handlr)
+            signal.signal(signal.SIGINT, handlr)
 
-        res_final = []
-        for r in res:
-            try:
-                res_final.append(r.get())
-            except Exception as ex:
-                res_final.append(f"Exception {ex}")
-        pool.close()
-        pool.join()
+            res: List[Future] = []
+            for i in run_args:
+                f = executor.submit(self.process_fragment, *i)
+                f.add_done_callback(self.completion_callback)
+                res.append(f)
+
+            LOG.info(f"Start waiting for completion")
+            wait(res)
+
+            res_final = []
+            for r in res:
+                try:
+                    res_process = r.result()
+                    res_final.append(res_process)
+                    LOG.info(f"Result obtained: {res_process}")
+                except Exception as ex:
+                    LOG.info(f"Exception occured: {type(ex)} {ex}")
+                    res_final.append(f"Exception {type(ex)} {ex}")
+                    
+
         t_end = time.perf_counter()
         LOG.info(f"Finished in {t_end-t_start} sec")
         return res_final
@@ -548,9 +576,6 @@ class DiAppSeismic3D2D(DiApp):
         self.report()
         LOG.debug(f"job {self.job_id} starting")
 
-        signal.signal(signal.SIGTERM, children_sigterm_handler)
-        signal.signal(signal.SIGINT, children_sigterm_handler)
-
         t_start = time.perf_counter()
         job_params = self.description
         
@@ -574,28 +599,39 @@ class DiAppSeismic3D2D(DiApp):
         output_lines = self.create_output_lines(self.lines_in)
         run_args_lines = [(str(i[0]), i[0], i[1]) for i in zip(self.lines_in, output_lines)]
 
-        pool = Pool(self.n_processes)
-        LOG.info(f"Processing pool created, size: {self.n_processes}")
+        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+            LOG.info(f"Executor created, size: {self.n_processes}")
 
-        handlr = functools.partial(main_sigint_handler_with_pool, pool)
-        signal.signal(signal.SIGTERM, handlr)
-        signal.signal(signal.SIGINT, handlr)
+            handlr = functools.partial(main_sigint_handler_with_exec, executor)
+            signal.signal(signal.SIGTERM, handlr)
+            signal.signal(signal.SIGINT, handlr)
 
-        res = []
-        for i in run_args_cubes:
-            res.append(pool.apply_async(self.process_fragment, i, callback=self.completion_callback))
+            res: List[Future] = []
+            for i in run_args_cubes:
+                f = executor.submit(self.process_fragment, *i)
+                f.add_done_callback(self.completion_callback)
+                res.append(f)
 
-        for i in run_args_lines:
-            res.append(pool.apply_async(self.process_line_data, i, callback=self.completion_callback))
+            for i in run_args_lines:
+                f = executor.submit(self.process_line_data, *i)
+                f.add_done_callback(self.completion_callback)
+                res.append(f)
 
-        res_final = []
-        for r in res:
-            try:
-                res_final.append(r.get())
-            except Exception as ex:
-                res_final.append(f"Exception {ex}")
-        pool.close()
-        pool.join()
+            LOG.info(f"Start waiting for completion")
+            wait(res)
+
+            LOG.info(f"Start filling results array")
+
+            res_final = []
+            for r in res:
+                try:
+                    res_process = r.result()
+                    res_final.append(res_process)
+                    LOG.info(f"Result obtained: {res_process}")
+                except Exception as ex:
+                    LOG.info(f"Exception occured: {type(ex)} {ex}")
+                    res_final.append(f"Exception {type(ex)} {ex}")
+
         t_end = time.perf_counter()
         LOG.info(f"Finished in {t_end-t_start} sec")
         return res_final
