@@ -92,7 +92,10 @@ def cut_intervals(y, ind, up_sample, down_sample):
                 continue
             else:
                 ind_ = int(ind[i,j])
-                y_out[i,j,:] = y[i,j,ind_ - up_sample:ind_ + down_sample + 1]
+                if np.isnan(y[i,j,ind_]):
+                    continue
+                else:
+                    y_out[i,j,:] = y[i,j,ind_ - up_sample:ind_ + down_sample + 1]
     return y_out
 
 def mean_amplitude(a):
@@ -326,19 +329,19 @@ def compute_attribute(cube_in: DISeismicCube, hor_in: DIHorizon3D, attributes: L
                     h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"]) / h_new_all["Effective_amp"]
 
                 if "autocorrelation_period" in attributes:
-                    h_new_all["autocorrelation_period"] = autocorrelation_period(fr,z_step)
+                    h_new_all["autocorrelation_period"] = autocorrelation_period(fr_intv,z_step)
 
                 if "mean_freq" in attributes:
-                    h_new_all["mean_freq"] = mean_freq(fr, min_freq, max_freq, z_step)
+                    h_new_all["mean_freq"] = mean_freq(fr_intv, min_freq, max_freq, z_step)
 
                 if "signal_compression" in attributes:
-                    h_new_all["signal_compression"] = signal_compression(fr, min_freq, max_freq, z_step)
+                    h_new_all["signal_compression"] = signal_compression(fr_intv, min_freq, max_freq, z_step)
 
                 if "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                    h_new_all["left_spectral_area"] = left_spectral_area(fr, min_freq,  bearing_freq, z_step)
+                    h_new_all["left_spectral_area"] = left_spectral_area(fr_intv, min_freq,  bearing_freq, z_step)
 
                 if "right_spectral_area" or  "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                    h_new_all["right_spectral_area"] = right_spectral_area(fr, bearing_freq, max_freq, z_step)
+                    h_new_all["right_spectral_area"] = right_spectral_area(fr_intv, bearing_freq, max_freq, z_step)
 
                 if "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
                     h_new_all["spectral_energy"] = h_new_all["left_spectral_area"] + h_new_all["right_spectral_area"]
