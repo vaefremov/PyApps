@@ -52,7 +52,7 @@ def linear_interpolate(y, z, zs):
     return y_out
 
 def linear_interpolate_traces(y, z, zs, up_sample, down_sample, t_step):
-    y_out = np.full((y.shape[0],y.shape[1],up_sample + down_sample,+1), np.nan)
+    y_out = np.full((y.shape[0],y.shape[1],up_sample + down_sample + 1), np.nan)
     for i in range(y.shape[0]):
         for j in range(y.shape[1]):
             if np.isnan(zs[i,j]) or np.isnan(y[i,j,:]).all():
@@ -69,7 +69,7 @@ def linear_interpolate_traces(y, z, zs, up_sample, down_sample, t_step):
 
 
 def cubic_interpolate_traces(y, z, zs, up_sample, down_sample, t_step):
-    y_out = np.full((y.shape[0],y.shape[1],up_sample + down_sample+1), np.nan)
+    y_out = np.full((y.shape[0],y.shape[1],up_sample + down_sample + 1), np.nan)
     for i in range(y.shape[0]):
         for j in range(y.shape[1]):
             if np.isnan(zs[i,j]) or np.isnan(y[i,j,:]).all():
@@ -382,12 +382,14 @@ if __name__ == "__main__":
     max_freq = job.description["max_freq"]
     bearing_freq = job.description["bearing_freq"]
     cube_in = job.open_input_dataset()
-    hor_name = job.description["Horizon"]
+    hor_name1 = job.description["Horizon"][0]
+    hor_name2 = job.description["Horizon"][1] if len(job.description["Horizon"])>1 else None
     type_interpolation = job.description["interpolation"]
-    hor = job.session.get_horizon_3d(cube_in.geometry_name, hor_name)
-    dt = compute_attribute(cube_in, hor, attributes, distance_up, distance_down, min_freq, max_freq, bearing_freq )
+    hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
+    hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
+    dt = compute_attribute(cube_in, hor1, attributes, distance_up, distance_down, min_freq, max_freq, bearing_freq )
     for i,attr_name in enumerate(attributes, 1):
-        f_out = job.session.create_attribute_2d_writer_as_other(hor, job.description["New Name"], attr_name)
+        f_out = job.session.create_attribute_2d_writer_as_other(hor1, job.description["New Name"], attr_name)
         f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
         f_out.write_data(dt[i])
 
