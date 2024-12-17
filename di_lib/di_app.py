@@ -1,10 +1,11 @@
 from collections import namedtuple
 from token import OP
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Dict
 import argparse
 import requests
 import json
 import sys
+import os
 
 from .seismic_cube import DISeismicCube
 from .seismic_line import DISeismicLine
@@ -22,6 +23,7 @@ from concurrent.futures import ProcessPoolExecutor, wait, Future
 
 
 LOG = logging.getLogger(__name__)
+MAX_TRIES = 3
 
 class JobDescription(namedtuple("JobDescription", ["job_id", "project_id", "token", "server_url"])):
     __slots__ = ()
@@ -30,6 +32,9 @@ class Frag(namedtuple("Frag", "no_i span_i no_x span_x")):
     __slots__ = ()
 
 class Context(namedtuple("Context", "in_cube_params in_line_params out_cube_params out_line_params")):
+    __slots__ = ()
+
+class ProcessCParams(namedtuple("ProcessCParams", "c_in c_out frag")):
     __slots__ = ()
 
 def parse_args() -> JobDescription:
@@ -51,13 +56,6 @@ def children_sigterm_handler(signum, frame):
     LOG.info(f"Signal caught in child {signum}")
     sys.exit(signum)
 
-def main_sigint_handler_with_pool(pool, signum, frame):
-    LOG.info(f"Caught signal {signum} in main process")
-    if pool:
-        pool.terminate()
-        LOG.info(f"Pool terminated")
-    sys.exit(100)
-
 def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
     LOG.info(f"Caught signal {signum} in main process")
     if executor:
@@ -67,6 +65,7 @@ def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
     sys.exit(100)
 
 def init_process():
+    LOG.info(f"Signals reset in child process {os.getpid()}")
     signal.signal(signal.SIGTERM, children_sigterm_handler)
     signal.signal(signal.SIGINT, children_sigterm_handler)
  
@@ -100,6 +99,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self.completed_frags = 0
         self._margin = None
         self.out_data_params = {}
+        self.loop_no = 0
 
     @property
     def description(self):
@@ -142,27 +142,27 @@ class DiApp(metaclass=abc.ABCMeta):
     def  compute(self, f_in: Tuple[np.ndarray], context: Context=Context(None, None, None, None)) -> Tuple:
         pass
 
-    def process_fragment(self, i, c_in, c_out, frag):
+    def process_fragment(self, task_id: int, params: ProcessCParams):
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
-        tmp_f = c_in.get_fragment(*frag)
-        if tmp_f is None:
-            LOG.info(f"Skipped: {i} {frag}")
-            return i, "SKIP"
-        f_out = ()
         try:
+            tmp_f = params.c_in.get_fragment(*params.frag)
+            if tmp_f is None:
+                LOG.info(f"Skipped: {task_id} {params.frag}")
+                return task_id, "SKIP"
             f_out = self.compute((tmp_f,))
-        except Exception:
+            if DiApp.wrong_output_formats((tmp_f,), f_out):
+                raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
+            for w,f in zip(params.c_out, f_out):
+                output_frag_if_not_none(w, f, params.frag)
+            LOG.info(f"Processed {task_id} {params.frag}")
+            return task_id, "OK"
+        except Exception as ex:
             traceback.print_exc()
-            raise
-        if DiApp.wrong_output_formats((tmp_f,), f_out):
-            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
-        for w,f in zip(c_out, f_out):
-            output_frag_if_not_none(w, f, frag)
-        LOG.info(f"Processed {i} {frag}")
-        return i, "OK"
+            ex.args = (task_id,) + ex.args
+            raise ex
 
     def log_progress(self, stage: str, progress: int):
         url = f"{self.url}/jobs/progress/{self.job_id}/"
@@ -179,8 +179,9 @@ class DiApp(metaclass=abc.ABCMeta):
         LOG.info(f"Completion: {self.completed_frags*100 // self.total_frags}")
         self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
 
-    def generate_process_arguments(self) -> List[Any]:
-        return []
+    @abc.abstractmethod
+    def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
+        return {}
 
     @abc.abstractmethod
     def run(self):
@@ -199,17 +200,17 @@ class DiApp(metaclass=abc.ABCMeta):
             signal.signal(signal.SIGTERM, handlr)
             signal.signal(signal.SIGINT, handlr)
 
-            res: List[Future] = []
-            for i in run_args:
+            futures: List[Future] = []
+            for i in run_args.items():
                 f = executor.submit(self.process_fragment, *i)
                 f.add_done_callback(self.completion_callback)
-                res.append(f)
+                futures.append(f)
 
             LOG.info(f"Start waiting for completion")
-            wait(res)
+            wait(futures)
 
             res_final = []
-            for r in res:
+            for r in futures:
                 try:
                     res_final.append(r.result())
                 except Exception as ex:
