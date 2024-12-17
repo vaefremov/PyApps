@@ -386,6 +386,7 @@ if __name__ == "__main__":
     hor_name2 = job.description["Horizon"][1] if len(job.description["Horizon"])>1 else None
     type_interpolation = job.description["interpolation"]
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
+    hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
     dt = compute_attribute(cube_in, hor1, attributes, distance_up, distance_down, min_freq, max_freq, bearing_freq )
     for i,attr_name in enumerate(attributes, 1):
         f_out = job.session.create_attribute_2d_writer_as_other(hor1, job.description["New Name"], attr_name)
