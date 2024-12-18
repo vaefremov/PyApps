@@ -50,7 +50,7 @@ handle_signal() {
     (
         sleep $TIMEOUT
         sleep $TIMEOUT
-        echo "Timeout reached. Killing timeout wather..."
+        echo "Timeout reached. Killing timeout watcher..."
         kill $TIMEOUT_PID 2>/dev/null
     ) &
 }
