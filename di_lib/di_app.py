@@ -145,17 +145,20 @@ class DiApp(metaclass=abc.ABCMeta):
     def  compute(self, f_in: Tuple[np.ndarray], context: Context=Context(None, None, None, None)) -> Tuple:
         pass
 
-    def process_fragment(self, task_id: int, params: ProcessCParams):
+    def process_fragment(self, task_id, params: ProcessCParams):
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
         try:
-            tmp_f = params.c_in.get_fragment(*params.frag)
+            tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
             if tmp_f is None:
                 LOG.info(f"Skipped: {task_id} {params.frag}")
                 return task_id, "SKIP"
-            f_out = self.compute((tmp_f,))
+            out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
+            context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+            context.in_cube_params["chunk"] = params.frag
+            f_out = self.compute((tmp_f,), context=context)
             if DiApp.wrong_output_formats((tmp_f,), f_out):
                 raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
             for w,f in zip(params.c_out, f_out):
@@ -244,31 +247,6 @@ class DiAppSeismic3D(DiApp):
         self.out_name_par = out_name_par
         self.cube_in: Optional[DISeismicCube] = None
         # self.out_data_params = {}
-
-    def process_fragment(self, task_id, params: ProcessCParams):
-        def output_frag_if_not_none(w_out, f_out, f_coords):
-            if w_out:
-                w_out.write_fragment(f_coords[0], f_coords[2], f_out)
-
-        try:
-            tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
-            if tmp_f is None:
-                LOG.info(f"Skipped: {task_id} {params.frag}")
-                return task_id, "SKIP"
-            out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
-            context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
-            context.in_cube_params["chunk"] = params.frag
-            f_out = self.compute((tmp_f,), context=context)
-            if DiApp.wrong_output_formats((tmp_f,), f_out):
-                raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
-            for w,f in zip(params.c_out, f_out):
-                output_frag_if_not_none(w, f, params.frag)
-            LOG.info(f"Processed {task_id} {params.frag}")
-            return task_id, "OK"
-        except Exception as ex:
-            traceback.print_exc()
-            ex.args = (task_id,) + ex.args
-            raise ex
 
     def open_input_dataset(self):
         geometry_name, name, name2 = self.description[self.in_name_par][0].split("\n")
