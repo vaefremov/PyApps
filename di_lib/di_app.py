@@ -13,13 +13,13 @@ from .session import DISession
 import logging
 import abc
 import numpy as np
-from multiprocessing import Pool, cpu_count
+import multiprocessing
 import signal
 import functools
 import time
 import traceback
 
-from concurrent.futures import ProcessPoolExecutor, wait, Future
+from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
 
 LOG = logging.getLogger(__name__)
@@ -59,10 +59,13 @@ def children_sigterm_handler(signum, frame):
 def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
     LOG.info(f"Caught signal {signum} in main process")
     if executor:
-        # pool.terminate()
         executor.shutdown(wait=False)
         LOG.info(f"Executor shutdown")
-    sys.exit(100)
+    for child in multiprocessing.active_children():
+        print(f"Killing {child.pid}")
+        child.kill()
+    print("after killing subprocesses")
+    os._exit(signum)
 
 def init_process():
     LOG.info(f"Signals reset in child process {os.getpid()}")
@@ -122,7 +125,7 @@ class DiApp(metaclass=abc.ABCMeta):
     @property
     def n_processes(self):
         if self._n_processes == 0:
-            default_n_proceses = min(cpu_count(), 8)
+            default_n_proceses = min(multiprocessing.cpu_count(), 8)
             self._n_processes = self.description.get("Threads Count", default_n_proceses)
         return self._n_processes
 
@@ -183,7 +186,6 @@ class DiApp(metaclass=abc.ABCMeta):
     def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
         return {}
 
-    @abc.abstractmethod
     def run(self):
         self.report()
         LOG.debug(f"job {self.job_id} starting")
@@ -199,24 +201,33 @@ class DiApp(metaclass=abc.ABCMeta):
             handlr = functools.partial(main_sigint_handler_with_exec, executor)
             signal.signal(signal.SIGTERM, handlr)
             signal.signal(signal.SIGINT, handlr)
-
-            futures: List[Future] = []
-            for i in run_args.items():
-                f = executor.submit(self.process_fragment, *i)
-                f.add_done_callback(self.completion_callback)
-                futures.append(f)
-
-            LOG.info(f"Start waiting for completion")
-            wait(futures)
-
+            loop_number = 0
             res_final = []
-            for r in futures:
-                try:
-                    res_final.append(r.result())
-                except Exception as ex:
-                    res_final.append(f"Exception {type(ex)} {ex}")
+            while (len(run_args) != 0) and (loop_number < MAX_TRIES):
+                futures: List[Future] = []
+                for i in run_args.items():
+                    f = executor.submit(self.process_fragment, *i)
+                    # f.add_done_callback(self.completion_callback)
+                    futures.append(f)
+
+                LOG.info(f"Waiting for completion")
+                for future in as_completed(futures):
+                    try:
+                        res = future.result()
+                        res_final.append(res)
+                        del run_args[res[0]]
+                        self.completion_callback(None)
+                    except RuntimeError as ex:
+                        LOG.error(f"Task failed, no restart: {type(ex)} {ex}")
+                        del run_args[ex.args[0]]
+                        res_final.append(f"Exception for resubmit: {type(ex)} {ex}")
+                        self.completion_callback(None)
+                    except Exception as ex:
+                        LOG.info(f"Exception for resubmit: {type(ex)} {ex}")
 
         t_end = time.perf_counter()
+        if run_args:
+            LOG.error(f"Still not computed after {MAX_TRIES} tries: {run_args}")
         LOG.info(f"Finished in {t_end-t_start} sec")
         return res_final
 
@@ -234,30 +245,30 @@ class DiAppSeismic3D(DiApp):
         self.cube_in: Optional[DISeismicCube] = None
         # self.out_data_params = {}
 
-    def process_fragment(self, i, c_in, c_out, frag):
+    def process_fragment(self, task_id, params: ProcessCParams):
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
-        tmp_f: np.ndarray = c_in.get_fragment(*frag)
-        if tmp_f is None:
-            LOG.info(f"Skipped: {i} {frag}")
-            return i, "SKIP"
-        out_cube_params = c_out[0]._get_info() if len(c_out) else None
-        context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
-        context.in_cube_params["chunk"] = frag
-        f_out = ()
         try:
+            tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
+            if tmp_f is None:
+                LOG.info(f"Skipped: {task_id} {params.frag}")
+                return task_id, "SKIP"
+            out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
+            context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+            context.in_cube_params["chunk"] = params.frag
             f_out = self.compute((tmp_f,), context=context)
-        except Exception:
+            if DiApp.wrong_output_formats((tmp_f,), f_out):
+                raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
+            for w,f in zip(params.c_out, f_out):
+                output_frag_if_not_none(w, f, params.frag)
+            LOG.info(f"Processed {task_id} {params.frag}")
+            return task_id, "OK"
+        except Exception as ex:
             traceback.print_exc()
-            raise
-        if DiApp.wrong_output_formats((tmp_f,), f_out):
-            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
-        for w,f in zip(c_out, f_out):
-            output_frag_if_not_none(w, f, frag)
-        LOG.info(f"Processed {i} {frag}")
-        return i, "OK"
+            ex.args = (task_id,) + ex.args
+            raise ex
 
     def open_input_dataset(self):
         geometry_name, name, name2 = self.description[self.in_name_par][0].split("\n")
@@ -280,14 +291,7 @@ class DiAppSeismic3D(DiApp):
         grid = c.generate_fragments_grid_incr(incr_i, incr_x)
         return grid
 
-    def run(self):
-        self.report()
-        LOG.debug(f"job {self.job_id} starting")
-
-        signal.signal(signal.SIGTERM, children_sigterm_handler)
-        signal.signal(signal.SIGINT, children_sigterm_handler)
-
-        t_start = time.perf_counter()
+    def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
         job_params = self.description
         
         c = self.open_input_dataset()
@@ -300,37 +304,47 @@ class DiAppSeismic3D(DiApp):
 
         enum_grid = enumerate(grid)
         self.total_frags = len(grid)
-        run_args = [(i[0], c, w_out, i[1]) for i in enum_grid]
+        run_args = {i[0]: ProcessCParams(c, w_out, i[1]) for i in enum_grid}
+        return run_args
 
-        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
-            LOG.info(f"Executor created, size: {self.n_processes}")
+    # def run(self):
+    #     self.report()
+    #     LOG.debug(f"job {self.job_id} starting")
+
+    #     signal.signal(signal.SIGTERM, children_sigterm_handler)
+    #     signal.signal(signal.SIGINT, children_sigterm_handler)
+
+    #     t_start = time.perf_counter()
+
+    #     with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+    #         LOG.info(f"Executor created, size: {self.n_processes}")
 
 
-            handlr = functools.partial(main_sigint_handler_with_exec, executor)
-            signal.signal(signal.SIGTERM, handlr)
-            signal.signal(signal.SIGINT, handlr)
+    #         handlr = functools.partial(main_sigint_handler_with_exec, executor)
+    #         signal.signal(signal.SIGTERM, handlr)
+    #         signal.signal(signal.SIGINT, handlr)
 
-            res: List[Future] = []
-            for i in run_args:
-                f = executor.submit(self.process_fragment, *i)
-                f.add_done_callback(self.completion_callback)
-                res.append(f)
+    #         res: List[Future] = []
+    #         for i in run_args:
+    #             f = executor.submit(self.process_fragment, *i)
+    #             f.add_done_callback(self.completion_callback)
+    #             res.append(f)
 
-            wait(res)
+    #         wait(res)
 
-            res_final = []
-            for r in res:
-                try:
-                    res_process = r.result()
-                    res_final.append(res_process)
-                    LOG.info(f"Result obtained: {res_process}")
-                except Exception as ex:
-                    LOG.info(f"Exception occured: {type(ex)} {ex}")
-                    res_final.append(f"Exception {type(ex)} {ex}")
+    #         res_final = []
+    #         for r in res:
+    #             try:
+    #                 res_process = r.result()
+    #                 res_final.append(res_process)
+    #                 LOG.info(f"Result obtained: {res_process}")
+    #             except Exception as ex:
+    #                 LOG.info(f"Exception occured: {type(ex)} {ex}")
+    #                 res_final.append(f"Exception {type(ex)} {ex}")
                     
-        t_end = time.perf_counter()
-        LOG.info(f"Finished in {t_end-t_start} sec")
-        return res_final
+    #     t_end = time.perf_counter()
+    #     LOG.info(f"Finished in {t_end-t_start} sec")
+    #     return res_final
 
 class DiAppSeismic3DMultiple(DiApp):
     """This class launches calculations on multiple input data belonging to the same geometry.
