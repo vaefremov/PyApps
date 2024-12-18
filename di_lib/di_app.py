@@ -1,6 +1,6 @@
 from collections import namedtuple
 from token import OP
-from typing import Any, List, Optional, Tuple, Dict
+from typing import Any, List, Optional, Tuple, Dict, Union, cast
 import argparse
 import requests
 import json
@@ -35,6 +35,9 @@ class Context(namedtuple("Context", "in_cube_params in_line_params out_cube_para
     __slots__ = ()
 
 class ProcessCParams(namedtuple("ProcessCParams", "c_in c_out frag")):
+    __slots__ = ()
+
+class ProcessLParams(namedtuple("ProcessCParams", "nm, p_in, p_out")):
     __slots__ = ()
 
 def parse_args() -> JobDescription:
@@ -145,26 +148,20 @@ class DiApp(metaclass=abc.ABCMeta):
     def  compute(self, f_in: Tuple[np.ndarray], context: Context=Context(None, None, None, None)) -> Tuple:
         pass
 
-    def process_fragment(self, task_id, params: ProcessCParams):
-        def output_frag_if_not_none(w_out, f_out, f_coords):
-            if w_out:
-                w_out.write_fragment(f_coords[0], f_coords[2], f_out)
+    def process_cube_data(self, task_id: int, params: ProcessCParams) -> Tuple[int, str]:
+        raise NotImplementedError("processing cube data not implemented")
+    
+    def process_line_data(self, task_id: int, params: ProcessLParams) -> Tuple[int, str]:
+        raise NotImplementedError("processing line data not implemented")
 
+    def process_fragment(self, task_id, params: Union[ProcessCParams, ProcessLParams]) -> Tuple[int, str]:
         try:
-            tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
-            if tmp_f is None:
-                LOG.info(f"Skipped: {task_id} {params.frag}")
-                return task_id, "SKIP"
-            out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
-            context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
-            context.in_cube_params["chunk"] = params.frag
-            f_out = self.compute((tmp_f,), context=context)
-            if DiApp.wrong_output_formats((tmp_f,), f_out):
-                raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
-            for w,f in zip(params.c_out, f_out):
-                output_frag_if_not_none(w, f, params.frag)
-            LOG.info(f"Processed {task_id} {params.frag}")
-            return task_id, "OK"
+            if issubclass(type(params), ProcessCParams):
+                return self.process_cube_data(task_id, cast(ProcessCParams, params))
+            elif issubclass(type(params), ProcessLParams):
+                return self.process_line_data(task_id, cast(ProcessLParams, params))
+            else:
+                raise RuntimeError(f"Unexpected type of argument {type(params)}")
         except Exception as ex:
             traceback.print_exc()
             ex.args = (task_id,) + ex.args
@@ -186,7 +183,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
 
     @abc.abstractmethod
-    def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
+    def generate_process_arguments(self) -> Dict[int, Union[ProcessCParams, ProcessLParams]]:
         return {}
 
     def run(self):
@@ -269,9 +266,27 @@ class DiAppSeismic3D(DiApp):
         grid = c.generate_fragments_grid_incr(incr_i, incr_x)
         return grid
 
+    def process_cube_data(self, task_id: int, params: ProcessCParams) -> Tuple[int, str]:
+        def output_frag_if_not_none(w_out, f_out, f_coords):
+            if w_out:
+                w_out.write_fragment(f_coords[0], f_coords[2], f_out)
+
+        tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
+        if tmp_f is None:
+            LOG.info(f"Skipped: {task_id} {params.frag}")
+            return task_id, "SKIP"
+        out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
+        context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        context.in_cube_params["chunk"] = params.frag
+        f_out = self.compute((tmp_f,), context=context)
+        if DiApp.wrong_output_formats((tmp_f,), f_out):
+            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
+        for w,f in zip(params.c_out, f_out):
+            output_frag_if_not_none(w, f, params.frag)
+        LOG.info(f"Processed {task_id} {params.frag}")
+        return task_id, "OK"
+
     def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
-        job_params = self.description
-        
         c = self.open_input_dataset()
         self.cube_in = c
         
@@ -335,31 +350,27 @@ class DiAppSeismic3DMultiple(DiApp):
         self.cube_in: Optional[DISeismicCube] = None
         # self.out_data_params = {}
 
-    def process_fragment(self, i, c_in, c_out, frag):
+    def process_cube_data(self, task_id, params: ProcessCParams) -> Tuple[int, str]:
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
-        tmp_f = tuple([c.get_fragment(*frag) for c in c_in])
+        tmp_f = tuple([c.get_fragment(*params.frag) for c in params.c_in])
         for f in tmp_f:
             if f is None:
-                LOG.info(f"Skipped: {i} {frag}")
-                return i, "SKIP"
-        out_cube_params = c_out[0]._get_info() if len(c_out) else None
-        context = Context(in_cube_params=c_in[0]._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
-        context.in_cube_params["chunk"] = frag
+                LOG.info(f"Skipped: {task_id} {params.frag}")
+                return task_id, "SKIP"
+        out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
+        context = Context(in_cube_params=params.c_in[0]._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        context.in_cube_params["chunk"] = params.frag
         f_out = ()
-        try:
-            f_out = self.compute(tmp_f, context=context)
-        except Exception:
-            traceback.print_exc()
-            raise
+        f_out = self.compute(tmp_f, context=context)
         if DiApp.wrong_output_formats(tmp_f, f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
-        for w,f in zip(c_out, f_out):
-            output_frag_if_not_none(w, f, frag)
-        LOG.info(f"Processed {i} {frag}")
-        return i, "OK"
+        for w,f in zip(params.c_out, f_out):
+            output_frag_if_not_none(w, f, params.frag)
+        LOG.info(f"Processed {task_id} {params.frag}")
+        return task_id, "OK"
 
     def open_input_datasets(self):
         cubes_names = [i.split("\n") for i in self.description[self.in_name_par]]
@@ -400,16 +411,7 @@ class DiAppSeismic3DMultiple(DiApp):
         grid = c.generate_fragments_grid_incr(incr_i, incr_x)
         return grid
 
-    def run(self):
-        self.report()
-        LOG.debug(f"job {self.job_id} starting")
-
-        signal.signal(signal.SIGTERM, children_sigterm_handler)
-        signal.signal(signal.SIGINT, children_sigterm_handler)
-
-        t_start = time.perf_counter()
-        job_params = self.description
-        
+    def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
         cubes_in = self.open_input_datasets()
         self.cubes_in = cubes_in
         
@@ -419,38 +421,46 @@ class DiAppSeismic3DMultiple(DiApp):
 
         enum_grid = enumerate(grid)
         self.total_frags = len(grid)
-        run_args = [(i[0], cubes_in, w_out, i[1]) for i in enum_grid]
+        # run_args = [(i[0], cubes_in, w_out, i[1]) for i in enum_grid]
+        run_args = {i[0]: ProcessCParams(cubes_in, w_out, i[1]) for i in enum_grid}
+        return run_args
 
-        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
-            LOG.info(f"Executor created, size: {self.n_processes}")
+    # def run(self):
+    #     self.report()
+    #     LOG.debug(f"job {self.job_id} starting")
 
-            handlr = functools.partial(main_sigint_handler_with_exec, executor)
-            signal.signal(signal.SIGTERM, handlr)
-            signal.signal(signal.SIGINT, handlr)
+    #     run_args = self.generate_process_arguments()
 
-            res: List[Future] = []
-            for i in run_args:
-                f = executor.submit(self.process_fragment, *i)
-                f.add_done_callback(self.completion_callback)
-                res.append(f)
+    #     with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+    #         LOG.info(f"Executor created, size: {self.n_processes}")
 
-            LOG.info(f"Start waiting for completion")
-            wait(res)
+    #         handlr = functools.partial(main_sigint_handler_with_exec, executor)
+    #         signal.signal(signal.SIGTERM, handlr)
+    #         signal.signal(signal.SIGINT, handlr)
 
-            res_final = []
-            for r in res:
-                try:
-                    res_process = r.result()
-                    res_final.append(res_process)
-                    LOG.info(f"Result obtained: {res_process}")
-                except Exception as ex:
-                    LOG.info(f"Exception occured: {type(ex)} {ex}")
-                    res_final.append(f"Exception {type(ex)} {ex}")
+    #         res: List[Future] = []
+    #         for i in run_args.items():
+    #             f = executor.submit(self.process_fragment, *i)
+    #             f.add_done_callback(self.completion_callback)
+    #             res.append(f)
+
+    #         LOG.info(f"Start waiting for completion")
+    #         wait(res)
+
+    #         res_final = []
+    #         for r in res:
+    #             try:
+    #                 res_process = r.result()
+    #                 res_final.append(res_process)
+    #                 LOG.info(f"Result obtained: {res_process}")
+    #             except Exception as ex:
+    #                 LOG.info(f"Exception occured: {type(ex)} {ex}")
+    #                 res_final.append(f"Exception {type(ex)} {ex}")
                     
 
-        t_end = time.perf_counter()
-        LOG.info(f"Finished in {t_end-t_start} sec")
-        return res_final
+    #     t_end = time.perf_counter()
+    #     LOG.info(f"Finished in {t_end-t_start} sec")
+    #     return res_final
 
 
 class DiAppSeismic3D2D(DiApp):
@@ -467,59 +477,49 @@ class DiAppSeismic3D2D(DiApp):
         self.lines_in = []
         # self.out_data_params = {}
 
-    def process_fragment(self, i, c_in, c_out, frag):
+    def process_cube_data(self, task_id: int, params: ProcessCParams) -> Tuple[int, str]:
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
 
-        frag_i = Frag(*frag)
-        frag_e = enlarge_fragment(Frag(*frag), self.margin)
-        LOG.info(f"Start processing {i} {frag_e=} {frag=}")
-        tmp_f: Optional[np.ndarray] = c_in.get_fragment(*frag_e)
+        frag_i = Frag(*params.frag)
+        frag_e = enlarge_fragment(Frag(*params.frag), self.margin)
+        LOG.info(f"Start processing {task_id} {frag_e=} {params.frag=}")
+        tmp_f: Optional[np.ndarray] = params.c_in.get_fragment(*frag_e)
         if tmp_f is None:
-            LOG.info(f"Skipped: {i} {frag_e=} {frag=}")
-            return i, "SKIP"
-        out_cube_params = c_out[0]._get_info() if len(c_out) else None
-        context = Context(in_cube_params=c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
-        context.in_cube_params["chunk"] = frag
-        f_out = ()
-        try:
-            f_out = self.compute((tmp_f,), context=context)
-        except Exception:
-            traceback.print_exc()
-            raise
+            LOG.info(f"Skipped: {task_id} {frag_e=} {params.frag=}")
+            return task_id, "SKIP"
+        out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
+        context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
+        context.in_cube_params["chunk"] = params.frag
+        f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
-            raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
-        for w,f in zip(c_out, f_out):
+            raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
+        for w,f in zip(params.c_out, f_out):
             ar_out = f[frag_i.no_i-frag_e.no_i:frag_e.span_i-self.margin, frag_i.no_x-frag_e.no_x:frag_e.span_x-self.margin,:]
-            output_frag_if_not_none(w, ar_out, frag)
-        LOG.info(f"Processed {i} {frag_e=} {frag=}")
-        return i, "OK"
+            output_frag_if_not_none(w, ar_out, params.frag)
+        LOG.info(f"Processed {task_id} {frag_e=} {params.frag=}")
+        return task_id, "OK"
 
-    def process_line_data(self, nm, p_in, p_out):
+    def process_line_data(self, task_id: int, params: ProcessLParams) -> Tuple[int, str]:
         def output_frag_if_not_none(w_out, f_out):
             if w_out:
                 w_out.write_data(f_out)
 
-        tmp_f: Optional[np.ndarray] = p_in.get_data()
+        tmp_f: Optional[np.ndarray] = params.p_in.get_data()
         if tmp_f is None:
-            LOG.info(f"Skipped: {nm}")
-            return nm, "SKIP"
-        out_line_params = p_out[0]._get_info() if len(p_out) else None
-        context = Context(in_cube_params=None, in_line_params=p_in._get_info(), out_cube_params=None, out_line_params=out_line_params)
-        f_out = ()
-        try:
-            f_out = self.compute((tmp_f,), context=context)
-        except Exception:
-            traceback.print_exc()
-            raise
+            LOG.info(f"Skipped: {params.nm}")
+            return task_id, "SKIP"
+        out_line_params = params.p_out[0]._get_info() if len(params.p_out) else None
+        context = Context(in_cube_params=None, in_line_params=params.p_in._get_info(), out_cube_params=None, out_line_params=out_line_params)
+        f_out = self.compute((tmp_f,), context=context)
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
-        for w,f in zip(p_out, f_out):
+        for w,f in zip(params.p_out, f_out):
             output_frag_if_not_none(w, f)
-        LOG.info(f"Processed {nm}")
-        return nm, "OK"
+        LOG.info(f"Processed {params.nm}")
+        return task_id, "OK"
 
 
     def open_input_dataset(self):
@@ -565,15 +565,12 @@ class DiAppSeismic3D2D(DiApp):
         grid = c.generate_fragments_grid_incr(incr_i, incr_x)
         return grid
 
-    def run(self):
-        self.report()
-        LOG.debug(f"job {self.job_id} starting")
 
-        t_start = time.perf_counter()
-        job_params = self.description
-        
+    def generate_process_arguments(self) -> Dict[int, Union[ProcessCParams, ProcessLParams]]:
         run_args_cubes = []
+        run_args: Dict[int, Union[ProcessCParams, ProcessLParams]] = {}
         c = self.open_input_dataset()
+
         if c:
             self.cube_in = c
             
@@ -585,46 +582,75 @@ class DiAppSeismic3D2D(DiApp):
 
             enum_grid = enumerate(grid)
             self.total_frags = len(grid)
-            run_args_cubes = [(i[0], c, w_out, i[1]) for i in enum_grid]
+            run_args = {i[0]: ProcessCParams(c, w_out, i[1]) for i in enum_grid}
 
         self.lines_in = self.open_input_lines()
         self.total_frags += len(self.lines_in)
         output_lines = self.create_output_lines(self.lines_in)
-        run_args_lines = [(str(i[0]), i[0], i[1]) for i in zip(self.lines_in, output_lines)]
+        run_args_lines = {i[0]: ProcessLParams(str(i[1][0]), i[1][0], i[1][1]) for i in enumerate(zip(self.lines_in, output_lines), len(run_args))}
+        run_args.update(run_args_lines)
+        return run_args
 
-        with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
-            LOG.info(f"Executor created, size: {self.n_processes}")
+    # def run(self):
+    #     self.report()
+    #     LOG.debug(f"job {self.job_id} starting")
 
-            handlr = functools.partial(main_sigint_handler_with_exec, executor)
-            signal.signal(signal.SIGTERM, handlr)
-            signal.signal(signal.SIGINT, handlr)
+    #     t_start = time.perf_counter()
+    #     job_params = self.description
+        
+    #     run_args_cubes = []
+    #     c = self.open_input_dataset()
+    #     if c:
+    #         self.cube_in = c
+            
+    #         w_out = self.create_output_datasets(c)
 
-            res: List[Future] = []
-            for i in run_args_cubes:
-                f = executor.submit(self.process_fragment, *i)
-                f.add_done_callback(self.completion_callback)
-                res.append(f)
 
-            for i in run_args_lines:
-                f = executor.submit(self.process_line_data, *i)
-                f.add_done_callback(self.completion_callback)
-                res.append(f)
+    #         grid = self.generate_optimal_grid(c)
+    #         LOG.debug(f"{grid=}")
 
-            LOG.info(f"Start waiting for completion")
-            wait(res)
+    #         enum_grid = enumerate(grid)
+    #         self.total_frags = len(grid)
+    #         run_args_cubes = [(i[0], c, w_out, i[1]) for i in enum_grid]
 
-            LOG.info(f"Start filling results array")
+    #     self.lines_in = self.open_input_lines()
+    #     self.total_frags += len(self.lines_in)
+    #     output_lines = self.create_output_lines(self.lines_in)
+    #     run_args_lines = [(str(i[0]), i[0], i[1]) for i in zip(self.lines_in, output_lines)]
 
-            res_final = []
-            for r in res:
-                try:
-                    res_process = r.result()
-                    res_final.append(res_process)
-                    LOG.info(f"Result obtained: {res_process}")
-                except Exception as ex:
-                    LOG.info(f"Exception occured: {type(ex)} {ex}")
-                    res_final.append(f"Exception {type(ex)} {ex}")
+    #     with ProcessPoolExecutor(max_workers=self.n_processes, initializer=init_process) as executor:
+    #         LOG.info(f"Executor created, size: {self.n_processes}")
 
-        t_end = time.perf_counter()
-        LOG.info(f"Finished in {t_end-t_start} sec")
-        return res_final
+    #         handlr = functools.partial(main_sigint_handler_with_exec, executor)
+    #         signal.signal(signal.SIGTERM, handlr)
+    #         signal.signal(signal.SIGINT, handlr)
+
+    #         res: List[Future] = []
+    #         for i in run_args_cubes:
+    #             f = executor.submit(self.process_fragment, *i)
+    #             f.add_done_callback(self.completion_callback)
+    #             res.append(f)
+
+    #         for i in run_args_lines:
+    #             f = executor.submit(self.process_line_data, *i)
+    #             f.add_done_callback(self.completion_callback)
+    #             res.append(f)
+
+    #         LOG.info(f"Start waiting for completion")
+    #         wait(res)
+
+    #         LOG.info(f"Start filling results array")
+
+    #         res_final = []
+    #         for r in res:
+    #             try:
+    #                 res_process = r.result()
+    #                 res_final.append(res_process)
+    #                 LOG.info(f"Result obtained: {res_process}")
+    #             except Exception as ex:
+    #                 LOG.info(f"Exception occured: {type(ex)} {ex}")
+    #                 res_final.append(f"Exception {type(ex)} {ex}")
+
+    #     t_end = time.perf_counter()
+    #     LOG.info(f"Finished in {t_end-t_start} sec")
+    #     return res_final
