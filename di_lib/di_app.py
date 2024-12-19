@@ -37,7 +37,7 @@ class Context(namedtuple("Context", "in_cube_params in_line_params out_cube_para
 class ProcessCParams(namedtuple("ProcessCParams", "c_in c_out frag")):
     __slots__ = ()
 
-class ProcessLParams(namedtuple("ProcessCParams", "nm, p_in, p_out")):
+class ProcessLParams(namedtuple("ProcessLParams", "nm, p_in, p_out")):
     __slots__ = ()
 
 def parse_args() -> JobDescription:
