@@ -191,7 +191,6 @@ class DiApp(metaclass=abc.ABCMeta):
         LOG.debug(f"job {self.job_id} starting")
 
         t_start = time.perf_counter()
-        job_params = self.description
         
         run_args = self.generate_process_arguments()
 
@@ -204,13 +203,13 @@ class DiApp(metaclass=abc.ABCMeta):
             loop_number = 0
             res_final = []
             while (len(run_args) != 0) and (loop_number < MAX_TRIES):
+                loop_number += 1
                 futures: List[Future] = []
                 for i in run_args.items():
                     f = executor.submit(self.process_fragment, *i)
-                    # f.add_done_callback(self.completion_callback)
                     futures.append(f)
 
-                LOG.info(f"Waiting for completion")
+                LOG.debug(f"Waiting for completion in {loop_number=}")
                 for future in as_completed(futures):
                     try:
                         res = future.result()
@@ -220,7 +219,7 @@ class DiApp(metaclass=abc.ABCMeta):
                     except RuntimeError as ex:
                         LOG.error(f"Task failed, no restart: {type(ex)} {ex}")
                         del run_args[ex.args[0]]
-                        res_final.append(f"Exception for resubmit: {type(ex)} {ex}")
+                        res_final.append(f"Exception final: {type(ex)} {ex}")
                         self.completion_callback(None)
                     except Exception as ex:
                         LOG.info(f"Exception for resubmit: {type(ex)} {ex}")
