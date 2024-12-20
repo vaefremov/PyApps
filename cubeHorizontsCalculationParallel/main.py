@@ -427,7 +427,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata1 = hor_in1.get_data()
     hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
-    attributes=["Energy"]
+
     hdata2 = hor_in2.get_data() if hor_in2 is not None else None
     if hdata2 is not None:
         hdata2 = np.where((hdata2>= 0.1*MAXFLOAT) | (hdata2== np.inf), np.nan, hdata2)
