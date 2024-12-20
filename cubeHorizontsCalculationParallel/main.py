@@ -342,7 +342,7 @@ def right_spectral_area(a,grid_size, f_min, f_max, dt):
                    
                     r_sa[i,j] = np.sum(power)
     return r_sa
-def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2):
+def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes):
     h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
     if np.all(np.isnan(grid_hor1)) == True :
         return z, h_new_all
@@ -427,7 +427,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata1 = hor_in1.get_data()
     hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
-  
+    attributes=["Energy"]
     hdata2 = hor_in2.get_data() if hor_in2 is not None else None
     if hdata2 is not None:
         hdata2 = np.where((hdata2>= 0.1*MAXFLOAT) | (hdata2== np.inf), np.nan, hdata2)
@@ -442,15 +442,17 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     # Note: Here we use the fact that since Py 3.6 dict is ordered dict
     new_zr_all = {a: np.full((hdata1.shape[0],hdata1.shape[1]), np.nan) for a in attributes}
     total_frag = len(grid_real)
-    completed_frag = 0
+    
     with ProcessPoolExecutor(max_workers=num_worker) as executor:
         futures=[]
         for k in range(len(grid_real)):
             grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
             grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] if hor_in2 is not None else None
     
-            futures.append(executor.submit(compute_fragment,k,cube_in,hdata1,hdata2,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2))
+            futures.append(executor.submit(compute_fragment,k,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes))
+        completed_frag = 0
         for f in as_completed(futures):
+
             try:
                 z,h_new_all = f.result()
                 for a in attributes:
@@ -458,12 +460,11 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
                     new_zr_all[a] = new_zr_all[a].astype('float32')
                     np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
             except Exception as e:
-                print(f"Exception: {e}")
-            
-        
-        completed_frag += 1
-        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-        job.log_progress("calculation", completed_frag*100 // total_frag)       
+                print(f"Exception: {e}")       
+            completed_frag += 1
+            LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+            job.log_progress("calculation", completed_frag*100 // total_frag)   
+    
     np.nan_to_num(hdata1, nan=MAXFLOAT, copy=False)
     return np.vstack([hdata1[None, :, :]] + [new_zr[None, :, :] for new_zr in new_zr_all.values()])
     
