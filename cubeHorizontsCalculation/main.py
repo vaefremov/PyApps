@@ -346,12 +346,11 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
   
     hdata2 = hor_in2.get_data() if hor_in2 is not None else None
-
     if hdata2 is not None:
         hdata2 = np.where((hdata2>= 0.1*MAXFLOAT) | (hdata2== np.inf), np.nan, hdata2)
-        if np.mean(hdata2) <= np.mean(hdata1):
+        
+        if np.nanmean(hdata2) <= np.nanmean(hdata1):
             hdata1, hdata2 = hdata2, hdata1
-
     z_step = cube_in.time_step/1e6
     z_step_ms = cube_in.time_step / 1000
 
@@ -366,8 +365,13 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     for k in range(len(grid_real)):
         grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
         grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] if hor_in2 is not None else None
-        if np.all(np.isnan(grid_hor1)) == True:
+        
+        if np.all(np.isnan(grid_hor1)) == True :
             continue
+
+        elif np.all(np.isnan(grid_hor2)) == True if grid_hor2 is not None else False:
+            continue
+
         else:
             up_sample   = int(distance_up / z_step_ms )
             down_sample = int(distance_down / z_step_ms )
@@ -377,14 +381,13 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             else:
                 index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor1))))
                 index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor1))))
-        
             cube_time_new = cube_time[index_min - up_sample - 3:index_max + down_sample + 3]
     
             fr = cube_in.get_fragment_z(grid_real[k][0],grid_real[k][1], grid_real[k][2],grid_real[k][3],index_min-up_sample-3,(index_max+down_sample+3) - (index_min-up_sample-3))
             indxs1 = np.round((grid_hor1-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
             indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])) if hdata2 is not None else None
             h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
-
+        
             if type_interpolation == "no interpolation":
                 fr_intv = cut_intervals(fr, indxs1, indxs2, up_sample, down_sample)
             if type_interpolation == "linear":
