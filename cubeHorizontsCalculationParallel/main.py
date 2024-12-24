@@ -104,6 +104,7 @@ def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
+                        #x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,50)
                         try:
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                         except:
@@ -122,6 +123,7 @@ def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
+                        #x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,50)
                         try :
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                         except:
@@ -250,107 +252,124 @@ def autocorrelation_period(a, grid_size, dt):
                         a_p[i,j] = ind_half_period * 2 * dt
     return a_p
 
-def mean_freq(a, grid_size, f_min, f_max, dt):
+def mean_freq(s_all, freqs, grid_size, f_min, f_max, dt):
     global zero_samples
     m_f = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
             k = i * grid_size[1] + j
-            if np.isnan(a[k]).all():
+            if np.isnan(s_all[k]).all():
                 m_f[i,j] = np.nan
             else:
-                interval = a[k]
-                interval = interval[~np.isnan(interval)]
-                len_a = interval.shape[0]
-                len_a = len_a if len_a!=0 else 1
-                if len_a < 5:
-                    m_f[i,j]  = np.nan
+                interval = s_all[k]
+                if len(interval)==1:
+                    m_f[i,j] = np.nan
                 else:
-                    interval = taper_fragment(interval)
-                    spectr = np.abs(rfft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)]
-                    freqs = rfftfreq(len_a + zero_samples, dt)[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)]
-                    if f_min == 0.:
-                        spectr[0] = 0
-                    m_f[i,j] = np.dot(spectr, freqs) / np.sum(spectr)
+                    len_a = interval.shape[0]
+                    len_a = len_a if len_a!=0 else 1
+                    if len_a < 2:
+                        m_f[i,j]  = np.nan
+                    else:
+                        s = interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)]
+                        freq = freqs[k][int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)]
+                        if f_min == 0.:
+                            s[0] = 0
+                        m_f[i,j] = np.dot(s, freq) / np.sum(s)
     return m_f
 
-def signal_compression(a,grid_size, f_min, f_max, dt):
+def signal_compression(s_all,grid_size, f_min, f_max, dt):
     global zero_samples
     s_c = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
             k = i *  grid_size[1] + j
-            if np.isnan(a[k]).all():
+            if np.isnan(s_all[k]).all():
                 s_c[i,j] = np.nan
             else:
-                interval = a[k]
-                interval = interval[~np.isnan(interval)]
+                interval = s_all[k]
                 len_a = interval.shape[0]
-                if len_a < 5:
+                if len_a < 2:
                     s_c[i,j]  = np.nan
                 else:
-                    interval = taper_fragment(interval)
-                   
-                    power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
+                    power = (interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)])**2
                     if f_min == 0.:
                         power[0] = 0
                     s_c[i,j] = np.sum(power) / ((f_max - f_min) * np.max(power))
     return s_c
 
-def left_spectral_area(a,grid_size, f_min, f_max, dt):
+def left_spectral_area(s_all,grid_size, f_min, f_max, dt):
     global zero_samples
     l_sa = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
             k = i * grid_size[1] + j
-            if np.isnan(a[k]).all():
+            if np.isnan(s_all[k]).all():
                 l_sa[i,j] = np.nan
             else:
-                interval = a[k]
-                interval = interval[~np.isnan(interval)]
+                interval = s_all[k]
                 len_a = interval.shape[0]
-                if len_a < 5:
+                if len_a < 2:
                     l_sa[i,j]  = np.nan
                 else:
-                    interval = taper_fragment(interval)
-                    power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
+                    power = (interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)])**2
                     if f_min == 0.:
                         power[0] = 0
                     l_sa[i,j] = np.sum(power)
     return l_sa
 
 
-def right_spectral_area(a,grid_size, f_min, f_max, dt):
+def right_spectral_area(s_all,grid_size, f_min, f_max, dt):
     global zero_samples
     r_sa = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
             k = i * grid_size[1] + j
-            if np.isnan(a[k]).all():
+            if np.isnan(s_all[k]).all():
                 r_sa[i,j] = np.nan
             else:
-                interval = a[k]
-                interval = interval[~np.isnan(interval)]
+                interval = s_all[k]
                 len_a = interval.shape[0]
-                if len_a < 5:
+                if len_a < 2:
                     r_sa[i,j]  = np.nan
                 else:
-                    interval = taper_fragment(interval)
-                    power = (np.abs(np.fft.fft(interval))[int(f_min*(len_a + zero_samples)*dt):int(f_max*(len_a + zero_samples)*dt)])**2
+                    power = (interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)])**2
                     if f_min == 0.:
                         power[0] = 0
                    
                     r_sa[i,j] = np.sum(power)
     return r_sa
+def Fourier_transform(a,dt):
+    global zero_samples
+    global border_correction
+    spectr = []
+    freqs= []
+    for k in range(len(a)):
+        interval = a[k]
+        if len(interval)==1:
+            spectr.append([np.nan])
+            freqs.append([np.nan])
+        else:
+            interval = interval[~np.isnan(interval)]
+            len_a = interval.shape[0]
+            
+            if len_a < 2:
+                spectr.append([np.nan])
+                freqs.append([np.nan])
+            else:
+                interval = taper_fragment(interval)
+                spectr.append(np.abs(rfft(interval)))
+                freqs.append(rfftfreq(len_a + zero_samples, dt))
+    return spectr, freqs
 def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes):
     h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
     if np.all(np.isnan(grid_hor1)) == True :
         return z, h_new_all
-
+    
     elif np.all(np.isnan(grid_hor2)) == True if grid_hor2 is not None else False:
         return z, h_new_all
 
     else:
+        
         z_step = z_step_ms/1000
         up_sample   = int(distance_up / z_step_ms )
         down_sample = int(distance_down / z_step_ms )
@@ -377,7 +396,10 @@ def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bear
         if np.size(fr) == 1:
             return z, h_new_all
         else:
-
+            
+            if "signal_compression" or "mean_freq" or "right_spectral_area" or "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
+                spectr, freqs = Fourier_transform(fr_intv, z_step)
+           
             if "Amplitude" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
                 h_new_all["Amplitude"] = linear_interpolate (fr, cube_time_new, grid_hor1)
         
@@ -403,16 +425,16 @@ def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bear
                 h_new_all["autocorrelation_period"] = autocorrelation_period(fr_intv, fr_size, z_step)
 
             if "mean_freq" in attributes:
-                h_new_all["mean_freq"] = mean_freq(fr_intv, fr_size, min_freq, max_freq, z_step)
-
+                h_new_all["mean_freq"] = mean_freq(spectr, freqs, fr_size, min_freq, max_freq, z_step)
+               
             if "signal_compression" in attributes:
-                h_new_all["signal_compression"] = signal_compression(fr_intv, fr_size, min_freq, max_freq, z_step)
+                h_new_all["signal_compression"] = signal_compression(spectr, fr_size, min_freq, max_freq, z_step)
 
             if "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["left_spectral_area"] = left_spectral_area(fr_intv, fr_size, min_freq,  bearing_freq, z_step)
+                h_new_all["left_spectral_area"] = left_spectral_area(spectr, fr_size, min_freq,  bearing_freq, z_step)
 
             if "right_spectral_area" or  "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["right_spectral_area"] = right_spectral_area(fr_intv, fr_size, bearing_freq, max_freq, z_step)
+                h_new_all["right_spectral_area"] = right_spectral_area(spectr, fr_size, bearing_freq, max_freq, z_step)
 
             if "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
                 h_new_all["spectral_energy"] = h_new_all["left_spectral_area"] + h_new_all["right_spectral_area"]
@@ -427,7 +449,6 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata1 = hor_in1.get_data()
     hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
-
     hdata2 = hor_in2.get_data() if hor_in2 is not None else None
     if hdata2 is not None:
         hdata2 = np.where((hdata2>= 0.1*MAXFLOAT) | (hdata2== np.inf), np.nan, hdata2)
@@ -438,7 +459,6 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
 
     cube_time = np.arange(cube_in.data_start, cube_in.data_start  + z_step_ms * cube_in.n_samples, z_step_ms)
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x,hdata1)
-    
     # Note: Here we use the fact that since Py 3.6 dict is ordered dict
     new_zr_all = {a: np.full((hdata1.shape[0],hdata1.shape[1]), np.nan) for a in attributes}
     total_frag = len(grid_real)
@@ -464,7 +484,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             completed_frag += 1
             LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             job.log_progress("calculation", completed_frag*100 // total_frag)   
-    
+
     np.nan_to_num(hdata1, nan=MAXFLOAT, copy=False)
     return np.vstack([hdata1[None, :, :]] + [new_zr[None, :, :] for new_zr in new_zr_all.values()])
     
