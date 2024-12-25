@@ -397,7 +397,7 @@ def Fourier_transform(a, dt, dt_new):
 def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq, bearing_freq, grid_hor1, grid_hor2, cube_time, grid_real, z_step_ms, hor_in2, type_interpolation, attributes):
 
     LOG.info(f"Starting job {os.getpid()} {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
-
+    tm_start = time.time()
     h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
     if np.all(np.isnan(grid_hor1)) == True :
         LOG.info(f"Finish job (all nones hor1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
@@ -484,7 +484,7 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
 
             if "absorption_Ssw_Sww" in attributes:
                 h_new_all["absorption_Ssw_Sww"] = h_new_all["left_spectral_area"] / h_new_all["right_spectral_area"]
-            LOG.info(f"Finish job {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+            LOG.info(f"Finish job {os.getpid()} for {z=} in {time.time()-tm_start}s {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
             return z,h_new_all
 
 def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
@@ -549,6 +549,7 @@ if __name__ == "__main__":
     LOG.info(f"Starting job ExampleHor1 (pid {os.getpid()})")
     tm_start = time.time()
     job = cubeHorizontsCalculation()
+    job.report()
     attributes = job.description["attributes"]
     distance_up = job.description["distance_up"]
     distance_down = job.description["distance_down"]
