@@ -27,6 +27,16 @@ incr_x = 100
 border_correction = 3  
 zero_samples = 50  
 
+completed_frag = 0
+total_frag = 0
+
+def move_progress(f: Future):
+    global completed_frag
+    if f.exception() is None:
+        completed_frag += 1
+        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+        job.log_progress("calculation", completed_frag*100 // total_frag)   
+
 def taper_fragment(fr):
     global border_correction
     global zero_samples
@@ -503,6 +513,8 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x,hdata1)
     # Note: Here we use the fact that since Py 3.6 dict is ordered dict
     new_zr_all = {a: np.full((hdata1.shape[0],hdata1.shape[1]), np.nan) for a in attributes}
+
+    global total_frag
     total_frag = len(grid_real)
     
     with ProcessPoolExecutor(max_workers=num_worker) as executor:
@@ -511,10 +523,11 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
             grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] if hor_in2 is not None else None
             f = executor.submit(compute_fragment,k,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes)
+            f.add_done_callback(move_progress)
             futures.append(f)
             LOG.info(f"Submitted: {k=}")
 
-        completed_frag = 0
+        # completed_frag = 0
         for f in as_completed(futures):
 
             try:
@@ -523,14 +536,12 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
                 LOG.info(f"Returned {z=}")
                 for a in attributes:
                     new_zr_all[a][grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all[a]
-                    # new_zr_all[a] = new_zr_all[a].astype('float32') # ??? Надо ли в цикле для каждого future? И для всего new_zr_all?
-                    # np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
                 LOG.info(f"After writing to new_zr_all {z=}")
             except Exception as e:
                 print(f"Exception: {e}")       
-            completed_frag += 1
-            LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-            job.log_progress("calculation", completed_frag*100 // total_frag)   
+            # completed_frag += 1
+            # LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+            # job.log_progress("calculation", completed_frag*100 // total_frag)   
     for a in attributes:
         new_zr_all[a] = new_zr_all[a].astype('float32')
         np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
