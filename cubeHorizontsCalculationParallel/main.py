@@ -84,94 +84,114 @@ def cut_intervals(y, ind1, ind2, up_sample, down_sample):
                         continue
                     else:
                         y_out.append(y[i,j,ind_1 - up_sample:ind_1 + down_sample + 1])
-    return y_out
+    return y_out, None
 
 def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample, down_sample, t_step):
-    y_out = []
+    y_out  = []
+    dt_new = []
     if ind2 is not None:    
         for i in range(y.shape[0]):
             for j in range(y.shape[1]):
                 if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all() or np.isnan(ind2[i,j]):
                     y_out.append([np.nan])
+                    dt_new.append(np.nan)
                     continue
                 else:
                     ind_1 = int(ind1[i,j])
                     ind_2 = int(ind2[i,j])
                     if np.isnan(y[i,j,ind_1]) or np.isnan(y[i,j,ind_2]):
                         y_out.append([np.nan])
+                        dt_new.append(np.nan)
                         continue
                     else:
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
-                        x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
-                        #x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,50)
+                        #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,100)
                         try:
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
+                            dt_new.append((x0[1]-x0[0])*0.001)
                         except:
                             y_out.append([np.nan])
+                            dt_new.append(np.nan)
     else:                    
         for i in range(y.shape[0]):
             for j in range(y.shape[1]):
                 if np.isnan(gr_hor1[i,j]) or np.isnan(y[i,j,:]).all():
                     y_out.append([np.nan])
+                    dt_new.append(np.nan)
                     continue
                 else:
                     ind_1 = int(ind1[i,j])
                     if np.isnan(y[i,j,ind_1]):
                         y_out.append([np.nan])
+                        dt_new.append(np.nan)
                         continue
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
-                        x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
-                        #x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,50)
+                        #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,100)
                         try :
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
+                            dt_new.append((x0[1]-x0[0])*0.001)
                         except:
                             y_out.append([np.nan])
+                            dt_new.append(np.nan)
                             continue
-    return y_out
+    return y_out, dt_new
 def cubic_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample, down_sample, t_step):
     y_out = []
+    dt_new = []
     if ind2 is not None:    
         for i in range(y.shape[0]):
             for j in range(y.shape[1]):
                 if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all() or np.isnan(ind2[i,j]):
                     y_out.append([np.nan])
+                    dt_new.append(np.nan)
                     continue
                 else:
                     ind_1 = int(ind1[i,j])
                     ind_2 = int(ind2[i,j])
                     if np.isnan(y[i,j,ind_1]) or np.isnan(y[i,j,ind_2]):
                         y_out.append([np.nan])
+                        dt_new.append(np.nan)
                         continue
                     else:
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
-                        x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
+                        #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,100)
                         try:
                             y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
+                            dt_new.append((x0[1]-x0[0])*0.001)
                         except:
                             y_out.append([np.nan])
+                            dt_new.append(np.nan)
     else:                    
         for i in range(y.shape[0]):
             for j in range(y.shape[1]):
                 if np.isnan(gr_hor1[i,j]) or np.isnan(y[i,j,:]).all():
                     y_out.append([np.nan])
+                    dt_new.append(np.nan)
                     continue
                 else:
                     ind_1 = int(ind1[i,j])
                     if np.isnan(y[i,j,ind_1]):
                         y_out.append([np.nan])
+                        dt_new.append(np.nan)
                         continue
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
-                        x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
+                        #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,100)
                         try :
                             y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
+                            dt_new.append((x0[1]-x0[0])*0.001)
                         except:
                             y_out.append([np.nan])
+                            dt_new.append(np.nan)
                             continue
-    return y_out
+    return y_out, dt_new
 
 
 def mean_amplitude(a,grid_size):
@@ -229,7 +249,9 @@ def effective_amplitude(a,grid_size):
                 e_a[i,j] = np.sqrt(np.sum(a_i**2)) / len_a
     return e_a
 
-def autocorrelation_period(a, grid_size, dt):
+def autocorrelation_period(a, grid_size, dt, dt_new):
+    if dt_new is None:
+        dt_new = np.ones(len(a))*dt
     a_p = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
@@ -249,11 +271,13 @@ def autocorrelation_period(a, grid_size, dt):
                     if ind_half_period < 5 or ind_half_period >= interval.shape[0] / 2:
                         a_p[i,j]  = np.nan
                     else:
-                        a_p[i,j] = ind_half_period * 2 * dt
+                        a_p[i,j] = ind_half_period * 2 * dt_new[k]
     return a_p
 
-def mean_freq(s_all, freqs, grid_size, f_min, f_max, dt):
+def mean_freq(s_all, freqs, grid_size, f_min, f_max, dt, dt_new):
     global zero_samples
+    if dt_new is None:
+        dt_new = np.ones(len(s_all))*dt
     m_f = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
@@ -270,15 +294,17 @@ def mean_freq(s_all, freqs, grid_size, f_min, f_max, dt):
                     if len_a < 2:
                         m_f[i,j]  = np.nan
                     else:
-                        s = interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)]
-                        freq = freqs[k][int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)]
+                        s = interval[int(f_min*2*len_a*dt_new[k]):int(f_max*2*len_a*dt_new[k])]
+                        freq = freqs[k][int(f_min*2*len_a*dt_new[k]):int(f_max*2*len_a*dt_new[k])]
                         if f_min == 0.:
                             s[0] = 0
                         m_f[i,j] = np.dot(s, freq) / np.sum(s)
     return m_f
 
-def signal_compression(s_all,grid_size, f_min, f_max, dt):
+def signal_compression(s_all,grid_size, f_min, f_max, dt, dt_new):
     global zero_samples
+    if dt_new is None:
+        dt_new = np.ones(len(s_all))*dt
     s_c = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
@@ -291,14 +317,16 @@ def signal_compression(s_all,grid_size, f_min, f_max, dt):
                 if len_a < 2:
                     s_c[i,j]  = np.nan
                 else:
-                    power = (interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)])**2
+                    power = (interval[int(f_min*2*len_a*dt_new[k]):int(f_max*2*len_a*dt_new[k])])**2
                     if f_min == 0.:
                         power[0] = 0
                     s_c[i,j] = np.sum(power) / ((f_max - f_min) * np.max(power))
     return s_c
 
-def left_spectral_area(s_all,grid_size, f_min, f_max, dt):
+def left_spectral_area(s_all,grid_size, f_min, f_max, dt, dt_new):
     global zero_samples
+    if dt_new is None:
+        dt_new = np.ones(len(s_all))*dt
     l_sa = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
@@ -311,15 +339,17 @@ def left_spectral_area(s_all,grid_size, f_min, f_max, dt):
                 if len_a < 2:
                     l_sa[i,j]  = np.nan
                 else:
-                    power = (interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)])**2
+                    power = (interval[int(f_min*2*len_a*dt_new[k]):int(f_max*2*len_a*dt_new[k])])**2
                     if f_min == 0.:
                         power[0] = 0
                     l_sa[i,j] = np.sum(power)
     return l_sa
 
 
-def right_spectral_area(s_all,grid_size, f_min, f_max, dt):
+def right_spectral_area(s_all,grid_size, f_min, f_max, dt, dt_new):
     global zero_samples
+    if dt_new is None:
+        dt_new = np.ones(len(s_all))*dt
     r_sa = np.full((grid_size[0],grid_size[1]), np.nan)
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
@@ -332,17 +362,19 @@ def right_spectral_area(s_all,grid_size, f_min, f_max, dt):
                 if len_a < 2:
                     r_sa[i,j]  = np.nan
                 else:
-                    power = (interval[int(f_min*2*len_a*dt):int(f_max*2*len_a*dt)])**2
+                    power = (interval[int(f_min*2*len_a*dt_new[k]):int(f_max*2*len_a*dt_new[k])])**2
                     if f_min == 0.:
                         power[0] = 0
                    
                     r_sa[i,j] = np.sum(power)
     return r_sa
-def Fourier_transform(a,dt):
+def Fourier_transform(a, dt, dt_new):
     global zero_samples
     global border_correction
+    if dt_new is None:
+        dt_new = np.ones(len(a))*dt
     spectr = []
-    freqs= []
+    freqs  = []
     for k in range(len(a)):
         interval = a[k]
         if len(interval)==1:
@@ -358,9 +390,9 @@ def Fourier_transform(a,dt):
             else:
                 interval = taper_fragment(interval)
                 spectr.append(np.abs(rfft(interval)))
-                freqs.append(rfftfreq(len_a + zero_samples, dt))
+                freqs.append(rfftfreq(len_a + zero_samples, dt_new[k]))
     return spectr, freqs
-def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes):
+def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq, bearing_freq, grid_hor1, grid_hor2, cube_time, grid_real, z_step_ms, hor_in2, type_interpolation, attributes):
     h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
     if np.all(np.isnan(grid_hor1)) == True :
         return z, h_new_all
@@ -387,18 +419,18 @@ def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bear
         h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
     
         if type_interpolation == "no interpolation":
-            fr_intv = cut_intervals(fr, indxs1, indxs2, up_sample, down_sample)
+            fr_intv, dt_sec_new = cut_intervals(fr, indxs1, indxs2, up_sample, down_sample)
         if type_interpolation == "linear":
-            fr_intv = linear_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample,z_step_ms)
+            fr_intv, dt_sec_new = linear_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
         if type_interpolation == "cubic spline":
-            fr_intv =  cubic_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample,z_step_ms)
+            fr_intv, dt_sec_new =  cubic_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
         fr_size = fr.shape
         if np.size(fr) == 1:
             return z, h_new_all
         else:
             
             if "signal_compression" or "mean_freq" or "right_spectral_area" or "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                spectr, freqs = Fourier_transform(fr_intv, z_step)
+                spectr, freqs = Fourier_transform(fr_intv, z_step, dt_sec_new)
            
             if "Amplitude" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
                 h_new_all["Amplitude"] = linear_interpolate (fr, cube_time_new, grid_hor1)
@@ -422,19 +454,19 @@ def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bear
                 h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"]) / h_new_all["Effective_amp"]
 
             if "autocorrelation_period" in attributes:
-                h_new_all["autocorrelation_period"] = autocorrelation_period(fr_intv, fr_size, z_step)
+                h_new_all["autocorrelation_period"] = autocorrelation_period(fr_intv, fr_size, z_step, dt_sec_new)
 
             if "mean_freq" in attributes:
-                h_new_all["mean_freq"] = mean_freq(spectr, freqs, fr_size, min_freq, max_freq, z_step)
+                h_new_all["mean_freq"] = mean_freq(spectr, freqs, fr_size, min_freq, max_freq, z_step, dt_sec_new)
                
             if "signal_compression" in attributes:
-                h_new_all["signal_compression"] = signal_compression(spectr, fr_size, min_freq, max_freq, z_step)
+                h_new_all["signal_compression"] = signal_compression(spectr, fr_size, min_freq, max_freq, z_step, dt_sec_new)
 
             if "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["left_spectral_area"] = left_spectral_area(spectr, fr_size, min_freq,  bearing_freq, z_step)
+                h_new_all["left_spectral_area"] = left_spectral_area(spectr, fr_size, min_freq,  bearing_freq, z_step, dt_sec_new)
 
             if "right_spectral_area" or  "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["right_spectral_area"] = right_spectral_area(spectr, fr_size, bearing_freq, max_freq, z_step)
+                h_new_all["right_spectral_area"] = right_spectral_area(spectr, fr_size, bearing_freq, max_freq, z_step, dt_sec_new)
 
             if "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
                 h_new_all["spectral_energy"] = h_new_all["left_spectral_area"] + h_new_all["right_spectral_area"]
@@ -445,7 +477,7 @@ def compute_fragment(z,cube_in,distance_up,distance_down,min_freq, max_freq,bear
             if "absorption_Ssw_Sww" in attributes:
                 h_new_all["absorption_Ssw_Sww"] = h_new_all["left_spectral_area"] / h_new_all["right_spectral_area"]
             return z,h_new_all
-def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
+def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata1 = hor_in1.get_data()
     hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
@@ -513,7 +545,7 @@ if __name__ == "__main__":
     type_interpolation = job.description["interpolation"]
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
-    dt = compute_attribute(cube_in, hor1,hor2, attributes, distance_up, distance_down, min_freq, max_freq, bearing_freq, num_worker)
+    dt = compute_attribute(cube_in, hor1,hor2, attributes, type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq, num_worker)
     for i,attr_name in enumerate(attributes, 1):
         f_out = job.session.create_attribute_2d_writer_as_other(hor1, job.description["New Name"], attr_name)
         f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
