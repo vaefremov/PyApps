@@ -16,8 +16,9 @@ from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 from typing import List
 
 import time
+import os
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 incr_i = 100
@@ -392,12 +393,18 @@ def Fourier_transform(a, dt, dt_new):
                 spectr.append(np.abs(rfft(interval)))
                 freqs.append(rfftfreq(len_a + zero_samples, dt_new[k]))
     return spectr, freqs
+
 def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq, bearing_freq, grid_hor1, grid_hor2, cube_time, grid_real, z_step_ms, hor_in2, type_interpolation, attributes):
+
+    LOG.info(f"Starting job {os.getpid()} {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+
     h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
     if np.all(np.isnan(grid_hor1)) == True :
+        LOG.info(f"Finish job (all nones hor1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
         return z, h_new_all
     
     elif np.all(np.isnan(grid_hor2)) == True if grid_hor2 is not None else False:
+        LOG.info(f"Finish job (all nones hor2) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
         return z, h_new_all
 
     else:
@@ -426,6 +433,7 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
             fr_intv, dt_sec_new =  cubic_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
         fr_size = fr.shape
         if np.size(fr) == 1:
+            LOG.info(f"Finish job (fr = 1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
             return z, h_new_all
         else:
             
@@ -476,7 +484,9 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
 
             if "absorption_Ssw_Sww" in attributes:
                 h_new_all["absorption_Ssw_Sww"] = h_new_all["left_spectral_area"] / h_new_all["right_spectral_area"]
+            LOG.info(f"Finish job {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
             return z,h_new_all
+
 def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata1 = hor_in1.get_data()
@@ -500,17 +510,22 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
         for k in range(len(grid_real)):
             grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
             grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]] if hor_in2 is not None else None
-    
-            futures.append(executor.submit(compute_fragment,k,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes))
+            f = executor.submit(compute_fragment,k,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes)
+            futures.append(f)
+            LOG.info(f"Submitted: {k=}")
+
         completed_frag = 0
         for f in as_completed(futures):
 
             try:
                 z,h_new_all = f.result()
+                
+                LOG.info(f"Returned {z=}")
                 for a in attributes:
                     new_zr_all[a][grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all[a]
-                    new_zr_all[a] = new_zr_all[a].astype('float32')
+                    new_zr_all[a] = new_zr_all[a].astype('float32') # ??? Надо ли в цикле для каждого future? И для всего new_zr_all?
                     np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
+                LOG.info(f"After writing to new_zr_all {z=}")
             except Exception as e:
                 print(f"Exception: {e}")       
             completed_frag += 1
@@ -529,7 +544,7 @@ class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
         raise NotImplementedError("Shouldn't be called in this application!")
 
 if __name__ == "__main__":
-    LOG.debug(f"Starting job ExampleHor1")
+    LOG.info(f"Starting job ExampleHor1 (pid {os.getpid()})")
     tm_start = time.time()
     job = cubeHorizontsCalculation()
     attributes = job.description["attributes"]
