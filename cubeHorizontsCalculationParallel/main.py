@@ -524,7 +524,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
                 for a in attributes:
                     new_zr_all[a][grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all[a]
                     # new_zr_all[a] = new_zr_all[a].astype('float32') # ??? Надо ли в цикле для каждого future? И для всего new_zr_all?
-                    np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
+                    # np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
                 LOG.info(f"After writing to new_zr_all {z=}")
             except Exception as e:
                 print(f"Exception: {e}")       
@@ -533,6 +533,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             job.log_progress("calculation", completed_frag*100 // total_frag)   
     for a in attributes:
         new_zr_all[a] = new_zr_all[a].astype('float32')
+        np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
     np.nan_to_num(hdata1, nan=MAXFLOAT, copy=False)
     return np.vstack([hdata1[None, :, :]] + [new_zr[None, :, :] for new_zr in new_zr_all.values()])
     
