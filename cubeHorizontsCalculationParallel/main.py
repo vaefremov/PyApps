@@ -499,12 +499,27 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
 
 def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
     MAXFLOAT = float(np.finfo(np.float32).max) 
-    hdata1 = hor_in1.get_data()
-    hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
-    hdata2 = hor_in2.get_data() if hor_in2 is not None else None
-    if hdata2 is not None:
-        hdata2 = np.where((hdata2>= 0.1*MAXFLOAT) | (hdata2== np.inf), np.nan, hdata2)
+    hdata01 = hor_in1.get_data()
+    hdata01 = np.where((hdata01>= 0.1*MAXFLOAT) | (hdata01== np.inf), np.nan, hdata01)
+    hdata1 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan)
+
+    mask = np.mgrid[cube_in.min_i:cube_in.n_i,cube_in.min_x:cube_in.n_x]
+    mask1 = np.mgrid[hor1.min_i:hor1.min_i+hor1.n_i,hor1.min_x:hor1.min_x+hor1.n_x]
+
+    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<=cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<=cube_in.n_x),True,False)
+    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<=hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<=hor1.min_x+hor1.n_x),True,False)
+    hdata1[loar1h] = hdata01[loar1]
+
+    hdata02 = hor_in2.get_data() if hor_in2 is not None else None
+    if hdata02 is not None:
         
+        hdata2 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan)
+        hdata02 = np.where((hdata02>= 0.1*MAXFLOAT) | (hdata02== np.inf), np.nan, hdata02)
+        mask2 = np.mgrid[hor2.min_i:hor2.min_i+hor2.n_i,hor2.min_x:hor2.min_x+hor2.n_x]
+
+        loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<=cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<=cube_in.n_x),True,False)
+        loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<=hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<=hor2.min_x+hor2.n_x),True,False)
+        hdata2[loar2h] = hdata02[loar2]
         if np.nanmean(hdata2) <= np.nanmean(hdata1):
             hdata1, hdata2 = hdata2, hdata1
     z_step_ms = cube_in.time_step / 1000
