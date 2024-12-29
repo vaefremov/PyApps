@@ -25,7 +25,7 @@ incr_i = 100
 incr_x = 100
 
 border_correction = 3  
-zero_samples = 50  
+zero_samples = 1000  
 
 completed_frag = 0
 total_frag = 0
@@ -118,7 +118,7 @@ def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,50)
                         try:
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -141,7 +141,7 @@ def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,50)
                         try :
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -171,7 +171,7 @@ def cubic_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample,
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,50)
                         try:
                             y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -194,7 +194,7 @@ def cubic_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample,
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,50)
                         try :
                             y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
                             dt_new.append((x0[1]-x0[0])*0.001)
