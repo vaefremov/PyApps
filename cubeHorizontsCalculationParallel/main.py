@@ -25,7 +25,7 @@ incr_i = 100
 incr_x = 100
 
 border_correction = 3  
-zero_samples = 50  
+zero_samples = 1000  
 
 completed_frag = 0
 total_frag = 0
@@ -118,7 +118,7 @@ def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,50)
                         try:
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -141,7 +141,7 @@ def linear_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,50)
                         try :
                             y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -171,7 +171,7 @@ def cubic_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample,
 
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor2[i,j] + (down_sample+1)*t_step,50)
                         try:
                             y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -194,7 +194,7 @@ def cubic_interpolate_traces(y, c_time, ind1, ind2, gr_hor1, gr_hor2, up_sample,
                     else:
                         good_idx = np.where( np.isfinite(y[i,j,:]) )
                         #x0 = np.arange(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,t_step)
-                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,100)
+                        x0 = np.linspace(gr_hor1[i,j] - up_sample*t_step , gr_hor1[i,j] + (down_sample+1)*t_step,50)
                         try :
                             y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
                             dt_new.append((x0[1]-x0[0])*0.001)
@@ -406,15 +406,15 @@ def Fourier_transform(a, dt, dt_new):
 
 def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq, bearing_freq, grid_hor1, grid_hor2, cube_time, grid_real, z_step_ms, hor_in2, type_interpolation, attributes):
 
-    LOG.info(f"Starting job {os.getpid()} {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+    #LOG.info(f"Starting job {os.getpid()} {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
     tm_start = time.time()
-    h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
+    h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan, dtype = np.float32) for a in attributes}
     if np.all(np.isnan(grid_hor1)) == True :
-        LOG.info(f"Finish job (all nones hor1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+        #LOG.info(f"Finish job (all nones hor1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
         return z, h_new_all
     
     elif np.all(np.isnan(grid_hor2)) == True if grid_hor2 is not None else False:
-        LOG.info(f"Finish job (all nones hor2) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+        #LOG.info(f"Finish job (all nones hor2) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
         return z, h_new_all
 
     else:
@@ -433,7 +433,7 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-up_sample-3,(index_max+down_sample+3) - (index_min-up_sample-3))
         indxs1 = np.round((grid_hor1-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
         indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])) if hor_in2 is not None else None
-        h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan) for a in attributes}
+        h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan, dtype = np.float32) for a in attributes}
     
         if type_interpolation == "no interpolation":
             fr_intv, dt_sec_new = cut_intervals(fr, indxs1, indxs2, up_sample, down_sample)
@@ -443,7 +443,7 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
             fr_intv, dt_sec_new =  cubic_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
         fr_size = fr.shape
         if np.size(fr) == 1:
-            LOG.info(f"Finish job (fr = 1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+            #LOG.info(f"Finish job (fr = 1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
             return z, h_new_all
         else:
             
@@ -494,17 +494,32 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
 
             if "absorption_Ssw_Sww" in attributes:
                 h_new_all["absorption_Ssw_Sww"] = h_new_all["left_spectral_area"] / h_new_all["right_spectral_area"]
-            LOG.info(f"Finish job {os.getpid()} for {z=} in {time.time()-tm_start}s {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+            #LOG.info(f"Finish job {os.getpid()} for {z=} in {time.time()-tm_start}s {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
             return z,h_new_all
 
 def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
     MAXFLOAT = float(np.finfo(np.float32).max) 
-    hdata1 = hor_in1.get_data()
-    hdata1 = np.where((hdata1>= 0.1*MAXFLOAT) | (hdata1== np.inf), np.nan, hdata1)
-    hdata2 = hor_in2.get_data() if hor_in2 is not None else None
-    if hdata2 is not None:
-        hdata2 = np.where((hdata2>= 0.1*MAXFLOAT) | (hdata2== np.inf), np.nan, hdata2)
+    hdata01 = hor_in1.get_data()
+    hdata01 = np.where((hdata01>= 0.1*MAXFLOAT) | (hdata01== np.inf), np.nan, hdata01)
+    hdata1 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan, dtype = np.float32)
+
+    mask = np.mgrid[cube_in.min_i:cube_in.n_i,cube_in.min_x:cube_in.n_x]
+    mask1 = np.mgrid[hor1.min_i:hor1.min_i+hor1.n_i,hor1.min_x:hor1.min_x+hor1.n_x]
+
+    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<=cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<=cube_in.n_x),True,False)
+    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<=hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<=hor1.min_x+hor1.n_x),True,False)
+    hdata1[loar1h] = hdata01[loar1]
+
+    hdata02 = hor_in2.get_data() if hor_in2 is not None else None
+    if hdata02 is not None:
         
+        hdata2 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan,dtype = np.float32)
+        hdata02 = np.where((hdata02>= 0.1*MAXFLOAT) | (hdata02== np.inf), np.nan, hdata02)
+        mask2 = np.mgrid[hor2.min_i:hor2.min_i+hor2.n_i,hor2.min_x:hor2.min_x+hor2.n_x]
+
+        loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<=cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<=cube_in.n_x),True,False)
+        loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<=hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<=hor2.min_x+hor2.n_x),True,False)
+        hdata2[loar2h] = hdata02[loar2]
         if np.nanmean(hdata2) <= np.nanmean(hdata1):
             hdata1, hdata2 = hdata2, hdata1
     z_step_ms = cube_in.time_step / 1000
@@ -512,7 +527,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     cube_time = np.arange(cube_in.data_start, cube_in.data_start  + z_step_ms * cube_in.n_samples, z_step_ms)
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x,hdata1)
     # Note: Here we use the fact that since Py 3.6 dict is ordered dict
-    new_zr_all = {a: np.full((hdata1.shape[0],hdata1.shape[1]), np.nan) for a in attributes}
+    new_zr_all = {a: np.full((hdata1.shape[0],hdata1.shape[1]), np.nan,dtype = np.float32) for a in attributes}
 
     global total_frag
     total_frag = len(grid_real)
@@ -545,6 +560,8 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     for a in attributes:
         new_zr_all[a] = new_zr_all[a].astype('float32')
         np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
+    if hdata1.dtype==np.float64:
+        hdata1 = hdata1.astype('float32')
     np.nan_to_num(hdata1, nan=MAXFLOAT, copy=False)
     return np.vstack([hdata1[None, :, :]] + [new_zr[None, :, :] for new_zr in new_zr_all.values()])
     

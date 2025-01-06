@@ -172,6 +172,60 @@ class DISeismicCube:
             gr_arr.shape = (ninlines, ncdps, nz)
             return gr_arr
 
+    def get_inline(self, inline_no: int, trimmed: bool=True) -> np.ndarray:
+        url = f"{self.server_url}/seismic_3d/data/inline/{self.cube_id}/?inline_no={inline_no}"
+        if trimmed:
+            url = f"{self.server_url}/seismic_3d/data/inline_trim/{self.cube_id}/?inline_no={inline_no}"
+        with requests.get(url) as resp:
+            bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error("Request finished with error: %s", resp.status_code)
+            start_i = 0
+            if trimmed:
+                start_i, nz, ninlines = struct.unpack("<iii", raw_data[:12])
+            else:
+                nz, ninlines = struct.unpack("<ii", raw_data[:8])
+            LOG.debug(f"{nz=}, {ninlines=} {start_i=}")
+            if nz < 0:
+                return np.ndarray(0, dtype=np.float32)
+            if trimmed:            
+                gr_arr_p = np.frombuffer(raw_data[12:], dtype=np.float32)
+                gr_arr_p.shape = (ninlines, nz)
+                gr_arr = np.vstack([np.full((start_i, nz), np.nan, dtype=np.float32), gr_arr_p])
+            else:
+                gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
+                gr_arr.shape = (ninlines, nz)
+            return gr_arr
+
+
+    def get_xline(self, xline_no: int, trimmed: bool=True) -> np.ndarray:
+        url = f"{self.server_url}/seismic_3d/data/xline/{self.cube_id}/?xline_no={xline_no}"
+        if trimmed:
+            url = f"{self.server_url}/seismic_3d/data/xline_trim/{self.cube_id}/?xline_no={xline_no}"
+        with requests.get(url) as resp:
+            bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error("Request finished with error: %s", resp.status_code)
+            start_i = 0
+            if trimmed:
+                start_i, nz, nxlines = struct.unpack("<iii", raw_data[:12])
+            else:
+                nz, nxlines = struct.unpack("<ii", raw_data[:8])
+            LOG.debug(f"{nz=}, {nxlines=} {start_i=}")
+            if nz < 0:
+                return np.ndarray(0, dtype=np.float32)
+            if trimmed:            
+                gr_arr_p = np.frombuffer(raw_data[12:], dtype=np.float32)
+                gr_arr_p.shape = (nxlines, nz)
+                gr_arr = np.vstack([np.full((start_i, nz), np.nan, dtype=np.float32), gr_arr_p])
+            else:
+                gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
+                gr_arr.shape = (nxlines, nz)
+            return gr_arr
+
+
     def generate_fragments_grid(self, nfrag_i, nfrag_x):
         tmp = generate_fragments_grid(self.min_i, self.n_i, nfrag_i, self.min_x, self.n_x, nfrag_x)
         return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in tmp]
