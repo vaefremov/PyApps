@@ -44,6 +44,7 @@ class SeismicCalculation(di_app.DiAppSeismic3DMultiple):
                 globals() ["fintup{}".format(i)] = np.where((fintup[i] >= 0.1*MAXFLOAT) | (fintup[i] == np.inf), np.nan, fintup[i])
         
             f_out = ne.evaluate(self.formula)
+            f_out = f_out.astype("float32")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
             return (f_out,)
 
