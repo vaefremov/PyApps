@@ -405,7 +405,7 @@ def Fourier_transform(a, dt, dt_new):
     return spectr, freqs
 
 def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq, bearing_freq, grid_hor1, grid_hor2, cube_time, grid_real, z_step_ms, hor_in2, type_interpolation, attributes):
-
+    MAXFLOAT = float(np.finfo(np.float32).max) 
     #LOG.info(f"Starting job {os.getpid()} {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
     tm_start = time.time()
     h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan, dtype = np.float32) for a in attributes}
@@ -431,6 +431,7 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
         cube_time_new = cube_time[index_min - up_sample - 3:index_max + down_sample + 3]
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-up_sample-3,(index_max+down_sample+3) - (index_min-up_sample-3))
+        fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
         indxs1 = np.round((grid_hor1-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
         indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])) if hor_in2 is not None else None
         h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan, dtype = np.float32) for a in attributes}
@@ -553,10 +554,11 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
                     new_zr_all[a][grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all[a]
                 LOG.info(f"After writing to new_zr_all {z=}")
             except Exception as e:
-                print(f"Exception: {e}")       
+                LOG.info(f"Exception: {e}")       
             # completed_frag += 1
             # LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-            # job.log_progress("calculation", completed_frag*100 // total_frag)   
+            # job.log_progress("calculation", completed_frag*100 // total_frag) 
+        
     for a in attributes:
         new_zr_all[a] = new_zr_all[a].astype('float32')
         np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
@@ -593,7 +595,7 @@ if __name__ == "__main__":
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
     dt = compute_attribute(cube_in, hor1,hor2, attributes, type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq, num_worker)
     for i,attr_name in enumerate(attributes, 1):
-        f_out = job.session.create_attribute_2d_writer_as_other(hor1, job.description["New Name"], attr_name)
+        f_out = job.session.create_attribute_2d_writer_for_cube(cube_in, job.description["New Name"], attr_name)
         f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
         f_out.write_data(dt[i])
 
