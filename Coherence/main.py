@@ -12,7 +12,6 @@ LOG = logging.getLogger(__name__)
 
 MAXFLOAT = float(np.finfo(np.float32).max)
 
-
 def vec_corrcoef(X, Y, axis=1):
     Xm = X - np.mean(X, axis=axis, keepdims=True)
     Ym = Y - np.mean(Y, axis=axis, keepdims=True)
