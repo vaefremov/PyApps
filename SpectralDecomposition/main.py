@@ -8,7 +8,7 @@ import numpy as np
 import math
 from scipy.signal import hilbert, cwt, ricker, convolve, butter, filtfilt
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 MAXFLOAT = float(np.finfo(np.float32).max)
 

@@ -15,7 +15,7 @@ import scipy.signal as signal
 
 MAXFLOAT = float(np.finfo(np.float32).max)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 def taper_fragment(fr, border_correction: int):

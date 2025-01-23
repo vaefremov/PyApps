@@ -14,7 +14,7 @@ from typing import List
 
 import time
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 incr_i = 100
