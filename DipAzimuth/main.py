@@ -7,7 +7,6 @@ import time
 
 from di_lib import di_app
 from di_lib.di_app import Context
-# from di_lib import seismic_cube
 
 import numpy as np
 import scipy as sc

@@ -10,6 +10,7 @@ from scipy.signal import hilbert, cwt, ricker, convolve, butter, filtfilt
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
+
 MAXFLOAT = float(np.finfo(np.float32).max)
 
 def f2w(f, fs):
