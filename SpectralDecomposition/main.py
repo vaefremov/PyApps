@@ -87,7 +87,7 @@ class Decomposition (di_app.DiAppSeismic3D2D):
                 np.nan_to_num(result, nan=MAXFLOAT, copy=False)
                 f_out.append(result) 
 
-        LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
+        LOG.debug(f"Processing time for fragment (s): {time.time() - tm_start}")
 
         return tuple(i for i in f_out if i is not None)
 
