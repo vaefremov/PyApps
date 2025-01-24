@@ -47,7 +47,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
         self.out_data_params["z_step"] = self.new_step
        
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
-        LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
+        LOG.debug(f"Computing {[f_in.shape for f_in in f_in_tup]}")
         new_nz = context.out_cube_params["nz"]
         f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
         z = np.linspace(0,f_in_tup[0].shape[-1],f_in_tup[0].shape[-1], dtype=f_in_tup[0].dtype)

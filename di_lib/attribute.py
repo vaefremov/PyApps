@@ -130,7 +130,7 @@ class DIHorizon3DWriter(DIHorizon3D):
                     LOG.error("Failed to create horizon, response code %s", resp.status_code)
                     raise RuntimeError(f"Failed to create horizon, response code {resp.status_code}")
                 resp_j = json.loads(resp.content)
-                LOG.info("Reply: %s", resp_j)
+                LOG.debug("Reply: %s", resp_j)
                 self.horizon_id = resp_j["id"]
         except requests.exceptions.ConnectionError as ex:
             LOG.error("Exception during POST: %s", str(ex))
@@ -224,7 +224,7 @@ class DIAttribute2D(DIHorizon3DWriter):
                     LOG.error("Failed to create horizon, response code %s", resp.status_code)
                     raise RuntimeError(f"Failed to create horizon, response code {resp.status_code}")
                 resp_j = json.loads(resp.content)
-                LOG.info("Reply: %s", resp_j)
+                LOG.debug("Reply: %s", resp_j)
                 self.horizon_id = resp_j["id"]
                 self._layers_names = resp_j["layers_names"]
         except requests.exceptions.ConnectionError as ex:

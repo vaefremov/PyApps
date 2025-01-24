@@ -274,7 +274,7 @@ class DISeismicCubeWriter(DISeismicCube):
                     LOG.error("Failed to create cube, response code %s", resp.status_code)
                     raise RuntimeError(f"Failed to create cube, response code {resp.status_code}")
                 resp_j = json.loads(resp.content)
-                LOG.info("Reply: %s", resp_j)
+                LOG.debug("Reply: %s", resp_j)
                 self.cube_id = resp_j["id"]
         except requests.exceptions.ConnectionError as ex:
             LOG.error("Exception during POST: %s", str(ex))

@@ -56,14 +56,14 @@ def parse_args() -> JobDescription:
 
 
 def children_sigterm_handler(signum, frame):
-    LOG.info(f"Signal caught in child {signum}")
+    LOG.debug(f"Signal caught in child {signum}")
     sys.exit(signum)
 
 def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
     LOG.info(f"Caught signal {signum} in main process")
     if executor:
         executor.shutdown(wait=False)
-        LOG.info(f"Executor shutdown")
+        LOG.debug(f"Executor shutdown")
     for child in multiprocessing.active_children():
         print(f"Killing {child.pid}")
         child.kill()
@@ -71,7 +71,7 @@ def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
     os._exit(signum)
 
 def init_process():
-    LOG.info(f"Signals reset in child process {os.getpid()}")
+    LOG.debug(f"Signals reset in child process {os.getpid()}")
     signal.signal(signal.SIGTERM, children_sigterm_handler)
     signal.signal(signal.SIGINT, children_sigterm_handler)
  
@@ -122,7 +122,7 @@ class DiApp(metaclass=abc.ABCMeta):
     def margin(self):
         if self._margin is None:
             self._margin = self.description.get("margin", 0)
-            LOG.info(f"Margin set to {self._margin}")
+            LOG.debug(f"Margin set to {self._margin}")
         return self._margin
 
     @property
@@ -179,7 +179,7 @@ class DiApp(metaclass=abc.ABCMeta):
 
     def completion_callback(self, iterable):
         self.completed_frags += 1
-        LOG.info(f"Completion: {self.completed_frags*100 // self.total_frags}")
+        LOG.debug(f"Completion: {self.completed_frags*100 // self.total_frags}")
         self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
 
     @abc.abstractmethod
@@ -223,7 +223,7 @@ class DiApp(metaclass=abc.ABCMeta):
                         res_final.append((ex.args[0], f"Exception final: {type(ex)} {ex}"))
                         self.completion_callback(None)
                     except Exception as ex:
-                        LOG.info(f"Exception for resubmit: {type(ex)} {ex}")
+                        LOG.debug(f"Exception for resubmit: {type(ex)} {ex}")
                         LOG.debug(f"Exception {type(ex)}: Failed job id: {ex.args[0]} params: {run_args[ex.args[0]]}")
 
         t_end = time.perf_counter()
@@ -274,7 +274,7 @@ class DiAppSeismic3D(DiApp):
 
         tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
         if tmp_f is None:
-            LOG.info(f"Skipped: {task_id} {params.frag}")
+            LOG.debug(f"Skipped: {task_id} {params.frag}")
             return task_id, "SKIP"
         out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
         context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
@@ -284,7 +284,7 @@ class DiAppSeismic3D(DiApp):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(params.c_out, f_out):
             output_frag_if_not_none(w, f, params.frag)
-        LOG.info(f"Processed {task_id} {params.frag}")
+        LOG.debug(f"Processed {task_id} {params.frag}")
         return task_id, "OK"
 
     def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
@@ -319,7 +319,7 @@ class DiAppSeismic3DMultiple(DiApp):
         tmp_f = tuple([c.get_fragment(*params.frag) for c in params.c_in])
         for f in tmp_f:
             if f is None:
-                LOG.info(f"Skipped: {task_id} {params.frag}")
+                LOG.debug(f"Skipped: {task_id} {params.frag}")
                 return task_id, "SKIP"
         out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
         context = Context(in_cube_params=params.c_in[0]._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
@@ -330,7 +330,7 @@ class DiAppSeismic3DMultiple(DiApp):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(params.c_out, f_out):
             output_frag_if_not_none(w, f, params.frag)
-        LOG.info(f"Processed {task_id} {params.frag}")
+        LOG.debug(f"Processed {task_id} {params.frag}")
         return task_id, "OK"
 
     def open_input_datasets(self):
@@ -408,10 +408,10 @@ class DiAppSeismic3D2D(DiApp):
 
         frag_i = Frag(*params.frag)
         frag_e = enlarge_fragment(Frag(*params.frag), self.margin)
-        LOG.info(f"Start processing {task_id} {frag_e=} {params.frag=}")
+        LOG.debug(f"Start processing {task_id} {frag_e=} {params.frag=}")
         tmp_f: Optional[np.ndarray] = params.c_in.get_fragment(*frag_e)
         if tmp_f is None:
-            LOG.info(f"Skipped: {task_id} {frag_e=} {params.frag=}")
+            LOG.debug(f"Skipped: {task_id} {frag_e=} {params.frag=}")
             return task_id, "SKIP"
         out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
         context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
@@ -422,7 +422,7 @@ class DiAppSeismic3D2D(DiApp):
         for w,f in zip(params.c_out, f_out):
             ar_out = f[frag_i.no_i-frag_e.no_i:frag_e.span_i-self.margin, frag_i.no_x-frag_e.no_x:frag_e.span_x-self.margin,:]
             output_frag_if_not_none(w, ar_out, params.frag)
-        LOG.info(f"Processed {task_id} {frag_e=} {params.frag=}")
+        LOG.debug(f"Processed {task_id} {frag_e=} {params.frag=}")
         return task_id, "OK"
 
     def process_line_data(self, task_id: int, params: ProcessLParams) -> Tuple[int, str]:
@@ -432,7 +432,7 @@ class DiAppSeismic3D2D(DiApp):
 
         tmp_f: Optional[np.ndarray] = params.p_in.get_data()
         if tmp_f is None:
-            LOG.info(f"Skipped: {params.nm}")
+            LOG.debug(f"Skipped: {params.nm}")
             return task_id, "SKIP"
         out_line_params = params.p_out[0]._get_info() if len(params.p_out) else None
         context = Context(in_cube_params=None, in_line_params=params.p_in._get_info(), out_cube_params=None, out_line_params=out_line_params)
@@ -441,7 +441,7 @@ class DiAppSeismic3D2D(DiApp):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(params.p_out, f_out):
             output_frag_if_not_none(w, f)
-        LOG.info(f"Processed {params.nm}")
+        LOG.debug(f"Processed {params.nm}")
         return task_id, "OK"
 
 

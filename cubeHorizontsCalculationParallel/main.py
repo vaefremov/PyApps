@@ -34,7 +34,7 @@ def move_progress(f: Future):
     global completed_frag
     if f.exception() is None:
         completed_frag += 1
-        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+        LOG.debug(f"Completion: {completed_frag*100 // total_frag}")
         job.log_progress("calculation", completed_frag*100 // total_frag)   
 
 def taper_fragment(fr):
@@ -541,7 +541,7 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             f = executor.submit(compute_fragment,k,cube_in,distance_up,distance_down,min_freq, max_freq,bearing_freq,grid_hor1,grid_hor2,cube_time,grid_real,z_step_ms,hor_in2,type_interpolation,attributes)
             f.add_done_callback(move_progress)
             futures.append(f)
-            LOG.info(f"Submitted: {k=}")
+            LOG.debug(f"Submitted: {k=}")
 
         # completed_frag = 0
         for f in as_completed(futures):
@@ -549,12 +549,12 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             try:
                 z,h_new_all = f.result()
                 
-                LOG.info(f"Returned {z=}")
+                LOG.debug(f"Returned {z=}")
                 for a in attributes:
                     new_zr_all[a][grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all[a]
-                LOG.info(f"After writing to new_zr_all {z=}")
+                LOG.debug(f"After writing to new_zr_all {z=}")
             except Exception as e:
-                LOG.info(f"Exception: {e}")       
+                LOG.error(f"Exception: {e}")       
             # completed_frag += 1
             # LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             # job.log_progress("calculation", completed_frag*100 // total_frag) 
