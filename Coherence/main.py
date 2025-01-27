@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 import logging
 import numpy as np
 import time
+import copy
 
 from di_lib import di_app
 from di_lib.di_app import Context
@@ -81,7 +82,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
-        f_in = f_in_tup[0]
+        f_in = copy.deepcopy(f_in_tup[0])
         if len(f_in.shape) == 3:
             frm = '3d'
             newTraces = np.zeros(shape=(f_in.shape[0], f_in.shape[1], f_in.shape[2]), dtype=np.float32)
