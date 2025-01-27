@@ -8,8 +8,9 @@ import numpy as np
 import math
 from scipy.signal import hilbert, cwt, ricker, convolve, butter, filtfilt
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
+
 MAXFLOAT = float(np.finfo(np.float32).max)
 
 def f2w(f, fs):
@@ -54,8 +55,8 @@ class Decomposition (di_app.DiAppSeismic3D2D):
     
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
-        LOG.info(f"Computing {[f_in.shape for f_in in f_in_tup]}")
-        LOG.info(f"Context: {context}")
+        LOG.debug(f"Computing {[f_in.shape for f_in in f_in_tup]}")
+        LOG.debug(f"Context: {context}")
         z_step = context.out_cube_params["z_step"] if context.out_cube_params else context.out_line_params["z_step"]
         f_in= np.where((f_in_tup[0]>= 0.1*MAXFLOAT) | (f_in_tup[0]== np.inf), np.nan, f_in_tup[0])
         fs = 1e6/z_step
@@ -86,7 +87,7 @@ class Decomposition (di_app.DiAppSeismic3D2D):
                 np.nan_to_num(result, nan=MAXFLOAT, copy=False)
                 f_out.append(result) 
 
-        LOG.info(f"Processing time for fragment (s): {time.time() - tm_start}")
+        LOG.debug(f"Processing time for fragment (s): {time.time() - tm_start}")
 
         return tuple(i for i in f_out if i is not None)
 

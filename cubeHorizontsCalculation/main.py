@@ -11,10 +11,9 @@ from di_lib.seismic_cube import DISeismicCube
 from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
 from typing import List
-
 import time
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 incr_i = 100

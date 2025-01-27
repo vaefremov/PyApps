@@ -8,11 +8,10 @@ import copy
 from di_lib import di_app
 from di_lib.di_app import Context
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 MAXFLOAT = float(np.finfo(np.float32).max)
-
 
 def vec_corrcoef(X, Y, axis=1):
     Xm = X - np.mean(X, axis=axis, keepdims=True)

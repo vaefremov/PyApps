@@ -3,10 +3,10 @@
 
 BIN=$(readlink -f $(dirname $0))
 
-# export REPO="/tmp/efremov/Repo1"
-export REPO="/data/DI_apps/DbHelper/Tmp/PyApps"
-# export DEPLOY_TO="/tmp/efremov/JobApps"
-export DEPLOY_TO="/data/DI_apps/DbHelper/JobApps"
+# export REPO="/data/DI_apps/DbHelper/Tmp/PyApps"
+export REPO="/hdd1/DI_apps/DbHelper/Tmp/PyApps"
+# export DEPLOY_TO="/data/DI_apps/DbHelper/JobApps"
+export DEPLOY_TO="/hdd1/DI_apps/DbHelper/JobApps"
 export ATTIC="$DEPLOY_TO/../Attic"
 
 
@@ -51,3 +51,5 @@ do
       fi
   esac
 done
+
+$BIN/deploy_helper.sh

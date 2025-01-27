@@ -7,8 +7,9 @@ import numexpr as ne
 from di_lib import di_app
 from di_lib.di_app import Context
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
+
 MAXFLOAT = float(np.finfo(np.float32).max)
 
 class SeismicCalculation(di_app.DiAppSeismic3DMultiple):

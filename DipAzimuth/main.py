@@ -7,7 +7,6 @@ import time
 
 from di_lib import di_app
 from di_lib.di_app import Context
-# from di_lib import seismic_cube
 
 import numpy as np
 import scipy as sc
@@ -15,7 +14,7 @@ import scipy.signal as signal
 
 MAXFLOAT = float(np.finfo(np.float32).max)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 def taper_fragment(fr, border_correction: int):

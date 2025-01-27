@@ -11,7 +11,12 @@ SUFFIX=$(date +"%Y%m%d%H%M%S")
 # Check if this is a correct app
 if [ !  -x $REPO/$APP/app.sh ];  then  echo "Warning: app.sh not executable, will fix" 1>&2 ; fi
 if [ ! -f $REPO/$APP/config.json ]; then echo "Config missing" 1>&2 && exit 2; fi
-jsonlint-3 $REPO/$APP/config.json 1>&2
+if [ -x /usr/bin/jsonlint-3 ]
+then 
+  jsonlint-3 $REPO/$APP/config.json 1>&2 
+else
+  /usr/bin/jsonlint-php $REPO/$APP/config.json 1>&2 
+fi
 if [ $? -ne 0 ]; then echo "Bad config" 1>&2 && exit 3; fi
 
 cd $DEPLOY_TO
