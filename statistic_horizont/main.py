@@ -226,6 +226,6 @@ if __name__ == "__main__":
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
     
     new_min,new_max,new_mean,new_median, raspr, pocket_value = compute_slice(cube_in, hor1, hor2,num_worker)
-    print(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
-    print(raspr)
+    LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
+    LOG.info(f"raspr")
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
