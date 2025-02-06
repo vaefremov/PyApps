@@ -10,6 +10,9 @@ from di_lib.di_app import Context
 from di_lib.seismic_cube import DISeismicCube
 from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
+
 from typing import List
 import math
 import time
@@ -20,6 +23,8 @@ LOG = logging.getLogger(__name__)
 incr_i = 100
 incr_x = 100
 num_worker = 10
+completed_frag = 0
+total_frag = 0
 num_center_fragments = 2 # Количество центральных фрагментов, который в дальнейшем можно автоматизировать
 
 def move_progress(f: Future):
@@ -168,16 +173,36 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     
     len_cube = len(new_grid_not)# Количество фрагметов большого куба
     new_count = np.zeros(len(pocket), dtype=int)
-    for k in range(len_cube):
-        grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-        grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-        fr_min1, fr_max1, fr_mean1, fr_median1,pocket1,raspr_count1 = compute_fragment(k,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket)
-        new_fr_min.append(fr_min1)
-        new_fr_max.append(fr_max1)
-        new_fr_mean.append(fr_mean1)
-        new_fr_median.append(fr_median1)
-        if np.all(np.isnan(raspr_count1)) != True:
-            new_count += raspr_count1
+    global total_frag
+    total_frag = len(new_grid_not)
+    
+    with ProcessPoolExecutor(max_workers=num_worker) as executor:
+        futures=[]
+        for k in range(len(new_grid_not)):
+            grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
+            grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket)
+            f.add_done_callback(move_progress)
+            futures.append(f)
+            LOG.debug(f"Submitted: {k=}")
+
+        # completed_frag = 0
+        for f in as_completed(futures):
+
+            try:
+                fr_min1, fr_max1, fr_mean1, fr_median1,pocket1,raspr_count1 = f.result()
+                
+                #LOG.debug(f"Returned {z=}")
+                new_fr_min.append(fr_min1)
+                new_fr_max.append(fr_max1)
+                new_fr_mean.append(fr_mean1)
+                new_fr_median.append(fr_median1)
+                if np.all(np.isnan(raspr_count1)) != True:
+                    new_count += raspr_count1
+                
+                LOG.debug(f"After writing to new_zr_all {z=}")
+            except Exception as e:
+                LOG.error(f"Exception: {e}")
 
     return np.nanmin(new_fr_min),np.nanmax(new_fr_max),np.nanmean(new_fr_mean),np.nanmedian(new_fr_median),new_count, pocket
     
