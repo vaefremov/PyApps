@@ -200,7 +200,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
                 if np.all(np.isnan(raspr_count1)) != True:
                     new_count += raspr_count1
                 
-                LOG.debug(f"After writing to new_zr_all {z=}")
+                # LOG.debug(f"After writing to new_zr_all {z=}")
             except Exception as e:
                 LOG.error(f"Exception: {e}")
 
