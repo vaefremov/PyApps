@@ -206,6 +206,8 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
                 new_fr_median.append(fr_median1)
                 if np.all(np.isnan(raspr_count1)) != True:
                     new_count += raspr_count1
+                
+                LOG.debug(f"After writing to new_zr_all {z=}")
             except Exception as e:
                 LOG.error(f"Exception: {e}")
 
@@ -231,5 +233,6 @@ if __name__ == "__main__":
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
     
     new_min,new_max,new_mean,new_median, raspr, pocket_value = compute_slice(cube_in, hor1, hor2,num_worker)
-    
+    LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
+    LOG.info(f"raspr")
     LOG.info(f"Processing time (s): {time.time() - tm_start}")

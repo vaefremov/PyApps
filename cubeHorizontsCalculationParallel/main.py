@@ -431,72 +431,76 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
         cube_time_new = cube_time[index_min - up_sample - 3:index_max + down_sample + 3]
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-up_sample-3,(index_max+down_sample+3) - (index_min-up_sample-3))
-        fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
-        indxs1 = np.round((grid_hor1-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
-        indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])) if hor_in2 is not None else None
-        h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan, dtype = np.float32) for a in attributes}
-    
-        if type_interpolation == "no interpolation":
-            fr_intv, dt_sec_new = cut_intervals(fr, indxs1, indxs2, up_sample, down_sample)
-        if type_interpolation == "linear":
-            fr_intv, dt_sec_new = linear_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
-        if type_interpolation == "cubic spline":
-            fr_intv, dt_sec_new =  cubic_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
-        fr_size = fr.shape
-        if np.size(fr) == 1:
-            #LOG.info(f"Finish job (fr = 1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
-            return z, h_new_all
+        if fr is None:
+           return z, h_new_all
         else:
-            
-            if "signal_compression" or "mean_freq" or "right_spectral_area" or "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                spectr, freqs = Fourier_transform(fr_intv, z_step, dt_sec_new)
-           
-            if "Amplitude" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
-                h_new_all["Amplitude"] = linear_interpolate (fr, cube_time_new, grid_hor1)
+
+            fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
+            indxs1 = np.round((grid_hor1-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
+            indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])) if hor_in2 is not None else None
+            h_new_all = {a: np.full((grid_hor1.shape[0],grid_hor1.shape[1]), np.nan, dtype = np.float32) for a in attributes}
         
-            if "Energy" in attributes:
-                h_new_all["Energy"] = mean_power(fr_intv, fr_size)
+            if type_interpolation == "no interpolation":
+                fr_intv, dt_sec_new = cut_intervals(fr, indxs1, indxs2, up_sample, down_sample)
+            if type_interpolation == "linear":
+                fr_intv, dt_sec_new = linear_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
+            if type_interpolation == "cubic spline":
+                fr_intv, dt_sec_new =  cubic_interpolate_traces(fr, cube_time_new, indxs1, indxs2, grid_hor1, grid_hor2, up_sample, down_sample, z_step_ms)
+            fr_size = fr.shape
+            if np.size(fr) == 1:
+                #LOG.info(f"Finish job (fr = 1) {os.getpid()}  {z=} {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+                return z, h_new_all
+            else:
                 
-            if "Effective_amp" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
-                h_new_all["Effective_amp"] = effective_amplitude(fr_intv, fr_size)
+                if "signal_compression" or "mean_freq" or "right_spectral_area" or "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
+                    spectr, freqs = Fourier_transform(fr_intv, z_step, dt_sec_new)
+            
+                if "Amplitude" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
+                    h_new_all["Amplitude"] = linear_interpolate (fr, cube_time_new, grid_hor1)
+            
+                if "Energy" in attributes:
+                    h_new_all["Energy"] = mean_power(fr_intv, fr_size)
+                    
+                if "Effective_amp" or "Pow_a_div_effective_amp" or "Abs_a_div_effective_amp" in attributes:
+                    h_new_all["Effective_amp"] = effective_amplitude(fr_intv, fr_size)
 
-            if "Pow_a_div_effective_amp" in attributes:
-                h_new_all["Pow_a_div_effective_amp"] = np.power(h_new_all["Amplitude"],2) / h_new_all["Effective_amp"]
+                if "Pow_a_div_effective_amp" in attributes:
+                    h_new_all["Pow_a_div_effective_amp"] = np.power(h_new_all["Amplitude"],2) / h_new_all["Effective_amp"]
 
-            if "mean_amplitude" in attributes:
-                h_new_all["mean_amplitude"] = mean_amplitude(fr_intv, fr_size)
+                if "mean_amplitude" in attributes:
+                    h_new_all["mean_amplitude"] = mean_amplitude(fr_intv, fr_size)
 
-            if "sum_amplitude" in attributes:
-                h_new_all["sum_amplitude"] = sum_amplitude(fr_intv, fr_size)
+                if "sum_amplitude" in attributes:
+                    h_new_all["sum_amplitude"] = sum_amplitude(fr_intv, fr_size)
 
-            if "Abs_a_div_effective_amp" in attributes:
-                h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"]) / h_new_all["Effective_amp"]
+                if "Abs_a_div_effective_amp" in attributes:
+                    h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"]) / h_new_all["Effective_amp"]
 
-            if "autocorrelation_period" in attributes:
-                h_new_all["autocorrelation_period"] = autocorrelation_period(fr_intv, fr_size, z_step, dt_sec_new)
+                if "autocorrelation_period" in attributes:
+                    h_new_all["autocorrelation_period"] = autocorrelation_period(fr_intv, fr_size, z_step, dt_sec_new)
 
-            if "mean_freq" in attributes:
-                h_new_all["mean_freq"] = mean_freq(spectr, freqs, fr_size, min_freq, max_freq, z_step, dt_sec_new)
-               
-            if "signal_compression" in attributes:
-                h_new_all["signal_compression"] = signal_compression(spectr, fr_size, min_freq, max_freq, z_step, dt_sec_new)
-
-            if "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["left_spectral_area"] = left_spectral_area(spectr, fr_size, min_freq,  bearing_freq, z_step, dt_sec_new)
-
-            if "right_spectral_area" or  "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["right_spectral_area"] = right_spectral_area(spectr, fr_size, bearing_freq, max_freq, z_step, dt_sec_new)
-
-            if "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
-                h_new_all["spectral_energy"] = h_new_all["left_spectral_area"] + h_new_all["right_spectral_area"]
+                if "mean_freq" in attributes:
+                    h_new_all["mean_freq"] = mean_freq(spectr, freqs, fr_size, min_freq, max_freq, z_step, dt_sec_new)
                 
-            if "absorption_Ssw_Sw" in attributes:
-                h_new_all["absorption_Ssw_Sw"] = h_new_all["left_spectral_area"] / h_new_all["spectral_energy"] * 100
+                if "signal_compression" in attributes:
+                    h_new_all["signal_compression"] = signal_compression(spectr, fr_size, min_freq, max_freq, z_step, dt_sec_new)
 
-            if "absorption_Ssw_Sww" in attributes:
-                h_new_all["absorption_Ssw_Sww"] = h_new_all["left_spectral_area"] / h_new_all["right_spectral_area"]
-            #LOG.info(f"Finish job {os.getpid()} for {z=} in {time.time()-tm_start}s {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
-            return z,h_new_all
+                if "left_spectral_area" or "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
+                    h_new_all["left_spectral_area"] = left_spectral_area(spectr, fr_size, min_freq,  bearing_freq, z_step, dt_sec_new)
+
+                if "right_spectral_area" or  "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
+                    h_new_all["right_spectral_area"] = right_spectral_area(spectr, fr_size, bearing_freq, max_freq, z_step, dt_sec_new)
+
+                if "spectral_energy" or "absorption_Ssw_Sw" or "absorption_Ssw_Sww" in attributes:
+                    h_new_all["spectral_energy"] = h_new_all["left_spectral_area"] + h_new_all["right_spectral_area"]
+                    
+                if "absorption_Ssw_Sw" in attributes:
+                    h_new_all["absorption_Ssw_Sw"] = h_new_all["left_spectral_area"] / h_new_all["spectral_energy"] * 100
+
+                if "absorption_Ssw_Sww" in attributes:
+                    h_new_all["absorption_Ssw_Sww"] = h_new_all["left_spectral_area"] / h_new_all["right_spectral_area"]
+                #LOG.info(f"Finish job {os.getpid()} for {z=} in {time.time()-tm_start}s {(grid_hor1.shape, grid_hor2.shape, cube_time)}")
+                return z,h_new_all
 
 def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIHorizon3D, attributes: List[str], type_interpolation, distance_up, distance_down, min_freq, max_freq, bearing_freq,num_worker) -> Optional[np.ndarray]:
     MAXFLOAT = float(np.finfo(np.float32).max) 
@@ -507,8 +511,8 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
     mask = np.mgrid[cube_in.min_i:cube_in.n_i,cube_in.min_x:cube_in.n_x]
     mask1 = np.mgrid[hor1.min_i:hor1.min_i+hor1.n_i,hor1.min_x:hor1.min_x+hor1.n_x]
 
-    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<=cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<=cube_in.n_x),True,False)
-    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<=hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<=hor1.min_x+hor1.n_x),True,False)
+    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<cube_in.n_x),True,False)
+    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<hor1.min_x+hor1.n_x),True,False)
     hdata1[loar1h] = hdata01[loar1]
 
     hdata02 = hor_in2.get_data() if hor_in2 is not None else None
@@ -518,8 +522,8 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
         hdata02 = np.where((hdata02>= 0.1*MAXFLOAT) | (hdata02== np.inf), np.nan, hdata02)
         mask2 = np.mgrid[hor2.min_i:hor2.min_i+hor2.n_i,hor2.min_x:hor2.min_x+hor2.n_x]
 
-        loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<=cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<=cube_in.n_x),True,False)
-        loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<=hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<=hor2.min_x+hor2.n_x),True,False)
+        loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<cube_in.n_x),True,False)
+        loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<hor2.min_x+hor2.n_x),True,False)
         hdata2[loar2h] = hdata02[loar2]
         if np.nanmean(hdata2) <= np.nanmean(hdata1):
             hdata1, hdata2 = hdata2, hdata1
