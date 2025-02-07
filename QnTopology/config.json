@@ -1,6 +1,6 @@
 {
   "config": {
-    "application": "QnTopology parallel",
+    "application": "QnTopology",
     "application_ru_RU": "Топология",
     "category": [ "Applications" ],
     "parameters_template": [
