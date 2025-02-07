@@ -1,0 +1,78 @@
+{
+  "config": {
+    "application": "QnTopology parallel",
+    "application_ru_RU": "Топология",
+    "category": [ "Applications" ],
+    "parameters_template": [
+        { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "ListView" },
+        { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes|SeismicDataGeoms3DNames", "collectChildren": true, "type": "ListView" },
+        { "name": "New Name", "type": "LineEdit", "default": "Result" },
+        {
+          "name": "attributes",
+          "type": "ListView",
+          "title": "Attributes",
+          "singleSelection": false,
+          "items": ["Amplitude","sum_amplitude","mean_amplitude", "Energy", "Effective_amp", "Abs_a_div_effective_amp", "Pow_a_div_effective_amp",
+          "autocorrelation_period", "spectral_energy", "mean_freq", "signal_compression", "left_spectral_area", "right_spectral_area",
+        "absorption_Ssw_Sw", "absorption_Ssw_Sww"]
+        },
+        {
+          "name": "interpolation",
+          "type": "ComboBox",
+          "title": "Интерполяция",
+          "default": "no interpolation",
+          "items": ["no interpolation","linear","cubic spline"]
+        },
+    {
+          "name": "distance_up",
+          "type": "DoubleSpinBox",
+          "title": "Расстояние до верхней границы, мс",
+          "default": 20,
+          "min": -100,
+          "max": 100
+        },
+
+    {
+          "name": "distance_down",
+          "type": "DoubleSpinBox",
+          "title": "Расстояние до нижней границы, мс",
+          "default": 20,
+          "min": -100,
+          "max": 100
+        },
+    {
+          "name": "min_freq",
+          "type": "DoubleSpinBox",
+          "title": "Нижняя частота, Гц",
+          "default": 0,
+          "min": 0,
+          "max": 10000
+        },
+    {
+          "name": "max_freq",
+          "type": "DoubleSpinBox",
+          "title": "Верхняя частота, Гц",
+          "default": 125,
+          "min": 0.1,
+          "max": 10000
+        },
+    {
+          "name": "bearing_freq",
+          "type": "DoubleSpinBox",
+          "title": "Опорная частота, Гц",
+          "default": 40,
+          "min": 0.1,
+          "max": 10000
+        },
+    {
+          "name": "num_worker",
+          "type": "SpinBox",
+          "title": "Количество процессов",
+          "default": 10,
+          "min": 1,
+          "max": 60
+        }
+        
+    ]
+  }
+}
