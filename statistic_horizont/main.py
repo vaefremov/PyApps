@@ -41,43 +41,46 @@ def distance_to_center(fragment,center_x, center_y):
     center_y_frag = y + dy // 2
     return np.sqrt((center_x - center_x_frag) ** 2 + (center_y - center_y_frag) ** 2)
         
-def cut_intervals(y,ind1, ind2):
-    # Обрезаем массив по горизонтам
-    y_out = np.full((y.shape[0],y.shape[1],y.shape[2]), np.nan,dtype = np.float32)
-    for i in range(y.shape[0]):
-        for j in range(y.shape[1]):
-            if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all() or np.isnan(ind2[i,j]):
-                continue
-            else:
-                ind_1 = int(ind1[i,j])
-                ind_2 = int(ind2[i,j])
-                if np.isnan(y[i,j,ind_1]) or np.isnan(y[i,j,ind_2]):
+def cut_intervals(y, ind1, ind2):
+    y_out = []
+    if ind2 is not None:    
+        for i in range(y.shape[0]):
+            for j in range(y.shape[1]):
+                if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all() or np.isnan(ind2[i,j]):
+                    y_out.append([np.nan])
                     continue
                 else:
-                    y_out[i,j,ind_1:ind_2] = (y[i,j,ind_1:ind_2])
+                    ind_1 = int(ind1[i,j])
+                    ind_2 = int(ind2[i,j])
+                    if np.isnan(y[i,j,ind_1]) or np.isnan(y[i,j,ind_2]):
+                        y_out.append([np.nan])
+                        continue
+                    else:
+                        y_out.append(y[i,j,ind_1:ind_2])
     return y_out
         
 def value_distribution(y, pocket,min_y,max_y):
     b1 = np.zeros(len(pocket), dtype=int)
     pocket_array = np.array(pocket)
-    
-    # Находим индекс ближайшего меньшего значения
-    idx_right = np.searchsorted(pocket_array, y, side='right')
-    idx_right = np.clip(idx_right, 0, len(pocket_array) - 1)
-    idx_left = np.clip(idx_right - 1, 0, len(pocket_array) - 1)
-    
-    # Выбираем ближайшее меньшее значение
-    idx_closest = np.where(pocket_array[idx_left] <= y, idx_left, idx_right)
-    
-    # Получаем ближайшие значения
-    nearest_values = pocket_array[idx_closest]
-    
-    unique, counts = np.unique(nearest_values, return_counts=True)
-    
-    for value, count in zip(unique, counts):
-        if value <= max_y:
+    #print(pocket_array.shape)
+    for y_values in y:
+        if len(y_values) == 1 and np.isnan(y_values[0]):
+            continue  
+        y_values = y_values[~np.isnan(y_values)]
+
+        # Ищем индексы ближайших значений
+        idx_right = np.searchsorted(pocket_array, y_values, side='right')
+        idx_right = np.clip(idx_right, 0, len(pocket_array) - 1)
+        idx_left = np.clip(idx_right - 1, 0, len(pocket_array) - 1)
+
+        idx_closest = np.where(pocket_array[idx_left] <= y_values, idx_left, idx_right)
+        nearest_values = pocket_array[idx_closest]
+
+        unique, counts = np.unique(nearest_values, return_counts=True)
+
+        for value, count in zip(unique, counts):
             index = np.where(pocket_array == value)[0][0]
-            b1[index] = count
+            b1[index] += count
     
     return b1
 
@@ -107,16 +110,19 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
         indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
-        fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
-        new_fr = cut_intervals(fr,indxs1,indxs2)
-        fr_min = np.nanmin(new_fr)
-        fr_max = np.nanmax(new_fr)
-        fr_mean = np.nanmean(new_fr)
-        fr_median = np.nanmedian(new_fr)
-        if len(pocket) != 0:
-            raspr_count = value_distribution(new_fr, pocket,fr_min,fr_max)
+        if fr is None:
+            return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
         else:
-            raspr_count = []
+            fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
+            new_fr = cut_intervals(fr,indxs1,indxs2)
+            fr_min = np.nanmin(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
+            fr_max = np.nanmax(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
+            fr_mean = np.nanmean(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
+            fr_median = np.nanmedian(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
+            if len(pocket) != 0:
+                raspr_count = value_distribution(new_fr, pocket,fr_min,fr_max)
+            else:
+                raspr_count = []
 
     return fr_min, fr_max, fr_mean, fr_median, pocket,raspr_count
 
@@ -133,16 +139,16 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     hdata1 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan, dtype = np.float32)
     mask = np.mgrid[cube_in.min_i:cube_in.n_i,cube_in.min_x:cube_in.n_x]
     mask1 = np.mgrid[hor1.min_i:hor1.min_i+hor1.n_i,hor1.min_x:hor1.min_x+hor1.n_x]
-    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<=cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<=cube_in.n_x),True,False)
-    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<=hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<=hor1.min_x+hor1.n_x),True,False)
+    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<cube_in.n_x),True,False)
+    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<hor1.min_x+hor1.n_x),True,False)
     hdata1[loar1h] = hdata01[loar1]
     
     hdata02 = hor2.get_data()
     hdata2 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan,dtype = np.float32)
     hdata02 = np.where((hdata02>= 0.1*MAXFLOAT) | (hdata02== np.inf), np.nan, hdata02)
     mask2 = np.mgrid[hor2.min_i:hor2.min_i+hor2.n_i,hor2.min_x:hor2.min_x+hor2.n_x]
-    loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<=cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<=cube_in.n_x),True,False)
-    loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<=hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<=hor2.min_x+hor2.n_x),True,False)
+    loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<cube_in.n_x),True,False)
+    loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<hor2.min_x+hor2.n_x),True,False)
     hdata2[loar2h] = hdata02[loar2]
     if np.nanmean(hdata2) <= np.nanmean(hdata1):
         hdata1, hdata2 = hdata2, hdata1
@@ -159,6 +165,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     central_indices = [index for index, _, _ in ind_fragments[:num_center_fragments]]
     # Исключаем центральные фрагменты, чтобы не пересчитывать эти фрагменты повторно
     new_grid_not = [frag for i, frag in enumerate(grid_not) if i not in central_indices]
+    new_grid_real = [frag for i, frag in enumerate(grid_real) if i not in central_indices]
     
     for i in central_indices:
         grid_hor_centr1 = hdata1[grid_not[i][0]:grid_not[i][0] + grid_not[i][1],grid_not[i][2]:grid_not[i][2] + grid_not[i][3]]
@@ -169,7 +176,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
         new_fr_mean.append(fr_mean1)
         new_fr_median.append(fr_median1)
     pock = auto_round((np.max(new_fr_max) - np.min(new_fr_min))/1000) # Находим резмеры кармана, шаг
-    pocket = np.arange(np.min(new_fr_min)-5000*pock, np.max(new_fr_max)+5000*pock, pock)
+    pocket = np.arange(np.min(new_fr_min)-10000*pock, np.max(new_fr_max)+10000*pock, pock)
     
     len_cube = len(new_grid_not)# Количество фрагметов большого куба
     new_count = np.zeros(len(pocket), dtype=int)
@@ -179,9 +186,9 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     with ProcessPoolExecutor(max_workers=num_worker) as executor:
         futures=[]
         for k in range(len(new_grid_not)):
-            grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket)
+            grid_hor1 = hdata1[new_grid_not[k][0]:new_grid_not[k][0] + new_grid_not[k][1],new_grid_not[k][2]:new_grid_not[k][2] + new_grid_not[k][3]]
+            grid_hor2 = hdata2[new_grid_not[k][0]:new_grid_not[k][0] + new_grid_not[k][1],new_grid_not[k][2]:new_grid_not[k][2] + new_grid_not[k][3]]
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,new_grid_real,pocket)
             f.add_done_callback(move_progress)
             futures.append(f)
             LOG.debug(f"Submitted: {k=}")
@@ -200,7 +207,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
                 if np.all(np.isnan(raspr_count1)) != True:
                     new_count += raspr_count1
                 
-                # LOG.debug(f"After writing to new_zr_all {z=}")
+                #LOG.debug(f"After writing to new_zr_all {z=}")
             except Exception as e:
                 LOG.error(f"Exception: {e}")
 
