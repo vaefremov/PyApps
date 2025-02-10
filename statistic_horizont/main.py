@@ -241,7 +241,8 @@ if __name__ == "__main__":
             "data_mean": float(new_mean),
             "data_median": float(new_median),
             "data_var": None,
-            "additional_data": {"raspr": list(raspr), "pocket_value": list(pocket_value)},
+            "additional_data": {"raspr": [int(i) for i in raspr], 
+                                "pocket_value": [float(i) for i in pocket_value]},
         }
     cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
