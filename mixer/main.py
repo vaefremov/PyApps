@@ -17,13 +17,13 @@ def vec_corrcoef(X, Y, axis=1):
     Xm = X - np.mean(X, axis=axis, keepdims=True)
     Ym = Y - np.mean(Y, axis=axis, keepdims=True)
     n = np.mean(Xm * Ym, axis=axis)
-    d = np.std(X ,axis=axis)*np.std(Ym,axis=axis)
+    d = np.std(Xm ,axis=axis)*np.std(Ym,axis=axis)
     return n / d
 
 def corelater(traces, shift, window, p, indC, idx, sca, att_vec):
     x    = traces[indC[0],indC[1],:]
     #Исключение точек координат, которых не существуют( выходят за границы куба)
-    pidx = np.argwhere((p[:,0]>=0) & (p[:,1]>=0) & (p[:,0]<traces.shape[0]) & (p[:,1]<traces.shape[1]))[0]
+    pidx = np.where((p[:,0]>=0) & (p[:,1]>=0) & (p[:,0]<traces.shape[0]) & (p[:,1]<traces.shape[1]))
     p = p[pidx]
     data = traces[p[:,0], p[:,1],:]
     att_vec = att_vec[pidx]
@@ -104,7 +104,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
         idx = np.arange(self.window+self.shift, f_in.shape[-1] - self.window-self.shift)
         if len(f_in.shape) == 3:
             frm = '3d'
-            newTraces = np.zeros(f_in.shape, dtype=np.float32)
+            newTraces = np.full(f_in.shape, np.nan, dtype=np.float32)
             for i in range(0,f_in.shape[0]):
                 for j in range(0,f_in.shape[1]):
                     if np.isinf(f_in[i,j,:]).all() == True:
@@ -120,7 +120,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
             for i in range(self.halfwin_traces):
                 att_vec[i * 2 : (i + 1) * 2] = self.attenuations ** (i + 1) 
             #newTraces = f_in
-            newTraces = np.zeros(f_in.shape, dtype=np.float32)
+            newTraces = np.full(f_in.shape, np.nan, dtype=np.float32)
             for i in range(0, f_in.shape[0]):
                 if np.isinf(f_in[i,:]).all() == True:
                     continue
