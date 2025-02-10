@@ -12,6 +12,7 @@ last_build=$(cat $LAST_BUILD_STAMP)
 deploy_helper()
 {
     echo $(date) "Deploy helper from $DICI/$current_build/Linux/bin/ to $DEPLOY_TO/DbHelper"
+    pkill start_helper.sh
     pkill DbHelper
     sleep 1
     cp $DICI/$1/Linux/bin/DbHelper $DEPLOY_TO/DbHelper
