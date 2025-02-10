@@ -20,7 +20,7 @@ def vec_corrcoef(X, Y, axis=1):
     d = np.std(Xm ,axis=axis)*np.std(Ym,axis=axis)
     return n / d
 
-def corelater(traces, shift, window, p, indC, idx, sca, att_vec):
+def corelater(traces, shift, window, p, indC, idx, att_vec):
     x    = traces[indC[0],indC[1],:]
     #Исключение точек координат, которых не существуют( выходят за границы куба)
     pidx = np.where((p[:,0]>=0) & (p[:,1]>=0) & (p[:,0]<traces.shape[0]) & (p[:,1]<traces.shape[1]))
@@ -33,7 +33,7 @@ def corelater(traces, shift, window, p, indC, idx, sca, att_vec):
     data = data[not_nan_idx]
 
     if shift == 0:
-        mix = (x + data * att_vec[:,None])
+        mix = x + np.sum((data * att_vec[:,None]),axis=0)
     else:
         x_m    = np.lib.stride_tricks.sliding_window_view(x, axis=0, window_shape = 2 * window + 1)
         data_m = np.lib.stride_tricks.sliding_window_view(data, axis=1, window_shape = 2 * window + 1)
@@ -45,8 +45,8 @@ def corelater(traces, shift, window, p, indC, idx, sca, att_vec):
         all_idx = idx + cor_idx
         # Выбор соответствующих сигналов из data
         result = data[np.arange(data.shape[0])[:, None], all_idx]
-        mix = (x[window + shift: x.shape[0] - window-shift] + result * att_vec[:,None])
-    return np.sum(mix / sca, axis=0)
+        mix = x[window + shift: x.shape[0] - window-shift] + np.sum((result * att_vec[:,None]),axis=0)
+    return mix / (1 + np.sum(att_vec))
 
 def nokta(c, frm, halfwin_traces, type_neighbors):
     if frm == '3d':
@@ -87,8 +87,6 @@ class Coherence(di_app.DiAppSeismic3D2D):
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
-        sum_coef_att= ((1-np.power(self.attenuations,self.halfwin_traces+1))/(1-self.attenuations))
-        #
         if self.type_neighbors == "square":
             att_vec = np.zeros((self.halfwin_traces * 2 + 1)**2 - 1)
             for i in range(self.halfwin_traces):
@@ -112,7 +110,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
                     else:
                         indC = [i, j]
                         indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
-                        mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx,sum_coef_att, att_vec)
+                        mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, att_vec)
                         newTraces[indC[0],indC[1],self.window + self.shift:f_in.shape[2] - self.window - self.shift] = mix_sig
         elif len(f_in.shape) == 2:
             frm = '2d'
@@ -127,7 +125,7 @@ class Coherence(di_app.DiAppSeismic3D2D):
                 else:
                     indC = i
                     indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
-                    mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, sum_coef_att, att_vec)
+                    mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, att_vec)
                     newTraces[indC,self.window + self.shift:f_in.shape[1] - self.window - self.shift] = mix_sig
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
