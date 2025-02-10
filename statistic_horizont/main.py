@@ -235,4 +235,13 @@ if __name__ == "__main__":
     new_min,new_max,new_mean,new_median, raspr, pocket_value = compute_slice(cube_in, hor1, hor2,num_worker)
     LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
     LOG.info(f"raspr")
+    stat = {
+            "data_max": new_max,
+            "data_min": new_min,
+            "data_mean": new_mean,
+            "data_median": new_median,
+            "data_var": None,
+            "additional_data": {"raspr": raspr, "pocket_value": pocket_value},
+        }
+    cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
