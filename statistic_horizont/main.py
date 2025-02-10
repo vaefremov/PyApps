@@ -236,12 +236,12 @@ if __name__ == "__main__":
     LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
     LOG.info(f"raspr")
     stat = {
-            "data_max": new_max,
-            "data_min": new_min,
-            "data_mean": new_mean,
-            "data_median": new_median,
+            "data_max": float(new_max),
+            "data_min": float(new_min),
+            "data_mean": float(new_mean),
+            "data_median": float(new_median),
             "data_var": None,
-            "additional_data": {"raspr": raspr, "pocket_value": pocket_value},
+            "additional_data": {"raspr": list(raspr), "pocket_value": list(pocket_value)},
         }
     cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
