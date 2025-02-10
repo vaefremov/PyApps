@@ -233,6 +233,36 @@ class DISeismicCube:
     def generate_fragments_grid_incr(self, incr_i, incr_x):
         tmp = generate_fragments_grid_incr(self.min_i, self.n_i, incr_i, self.min_x, self.n_x, incr_x)
         return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in tmp]
+    
+    def get_statistics_for_horizons(self, hor_top_name, hor_bottom_name):
+        url = f"{self.server_url}/seismic_3d/data/statistics/{self.cube_id}/"
+        with requests.get(url, params={"horizon_top": hor_top_name, "horizon_bottom": hor_bottom_name}) as resp:
+            if resp.status_code != 200:
+                LOG.error("Cant' get list of cubes: %s", resp.status_code)
+                return None
+            resp_j = json.loads(resp.content)
+            return resp_j
+        
+    def save_statistics_for_horizons(self, hor_top_name, hor_bottom_name, stat):
+        url = f"{self.server_url}/seismic_3d/data/statistics/{self.cube_id}/"
+        res_status = 200
+        res_id = -1
+        try:
+            stat["hor_top"] = hor_top_name
+            stat["hor_bottom"] = hor_bottom_name
+            LOG.debug(f"{stat=}")
+            body = json.dumps(stat).encode("utf8")
+            with requests.post(
+                    url, data=body, headers={"Content-Type": "application/json", "x-di-authorization": self.token}
+                ) as resp:
+                if resp.status_code != 200:
+                    LOG.error("Failed to save statistics, response code %s", resp.status_code)
+                    raise RuntimeError(f"Failed to save statistics, response code {resp.status_code}")
+                resp_j = json.loads(resp.content)
+                LOG.debug("Reply: %s", resp_j)
+        except requests.exceptions.ConnectionError as ex:
+            LOG.error("Exception during POST: %s", str(ex))
+            raise ex
 
 class DISeismicCubeWriter(DISeismicCube):
     def __init__(self, project_id: int, name: str, name2: str) -> None:
