@@ -42,7 +42,7 @@ def corelater(traces,shift,window,p,indC,idx,win_c,att_vec):
             cor[j+shift,:,:] = vec_corrcoef(x_m[None,shift:x_m.shape[0] - shift - 1,:], data_m[:,j + shift:data_m.shape[1] - shift + j - 1,:], axis=2)
         cor_idx = np.argmax(cor, axis=0) - shift
         all_idx = idx + cor_idx 
-        # Выбор соответствующих сигналов из data
+        # Выбор соответствующих трасс из data
         result = data[np.arange(data.shape[0])[:, None], all_idx]
         mix = x[win_c + shift: x.shape[0] - window-shift] + np.sum((result * att_vec[:,None]),axis=0)
     return mix /(1.+np.sum(att_vec))

@@ -1,7 +1,7 @@
 {
     "config": {
-      "application": "Mixer",
-      "application_ru_RU": "Смешивание сигналов",
+      "application": "Mixing traces",
+      "application_ru_RU": "Смешивание трасс",
       "category": [ "Applications" ],
       "parameters_template": [
           { "name": "Input Seismic2D Names", "inputDataType": "SeismicDataGeoms2DNames", "collectChildren": true, "type": "ListView" },
@@ -11,7 +11,7 @@
        {
           "name": "shift",
           "type": "SpinBox",
-          "title": "shift",
+          "title": "Shift",
           "default": 1,
           "min": 0,
           "max": 10
@@ -19,7 +19,7 @@
         {
           "name": "halfwin_traces",
           "type": "SpinBox",
-          "title": "halfwin traces",
+          "title": "Halfwindow traces",
           "default": 1,
           "min": 0,
           "max": 5
@@ -27,7 +27,7 @@
         {
           "name": "attenuations",
           "type": "DoubleSpinBox",
-          "title": "attenuations",
+          "title": "Attenuations",
           "default": 0.2,
           "min": 0,
           "max": 1
@@ -35,11 +35,11 @@
         {
           "name": "type",
           "type": "ComboBox",
-          "title": "type",
+          "title": "Type",
           "default": "square",
           "items": ["square","cross"]
         },
-        { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 10 },
+        { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 15 },
         {"name": "margin", "type": "CustomInt", "default": 1}
       ]
     }
