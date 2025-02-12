@@ -39,8 +39,8 @@ def corelater(traces,shift,window,p,indC,idx,win_c,att_vec):
         cor = np.zeros((2 * shift + 1,data.shape[0],x.shape[0] - 2 * shift - 2 * window - 1 ))
         
         for j in range(-shift, shift + 1):
-            cor[j,:,:] = vec_corrcoef(x_m[None,shift:x_m.shape[0] - shift - 1,:], data_m[:,j + shift:data_m.shape[1] - shift + j - 1,:], axis=2)
-        cor_idx = np.argmax(cor, axis=0)
+            cor[j+shift,:,:] = vec_corrcoef(x_m[None,shift:x_m.shape[0] - shift - 1,:], data_m[:,j + shift:data_m.shape[1] - shift + j - 1,:], axis=2)
+        cor_idx = np.argmax(cor, axis=0) - shift
         all_idx = idx + cor_idx 
         # Выбор соответствующих сигналов из data
         result = data[np.arange(data.shape[0])[:, None], all_idx]
@@ -99,7 +99,7 @@ class Mixer(di_app.DiAppSeismic3D2D):
 
         f_in = copy.deepcopy(f_in_tup[0])
         f_in = np.where((f_in>= 0.1*MAXFLOAT) | (f_in== np.inf), np.nan, f_in)
-        idx = np.arange(self.window+self.shift+1, f_in.shape[-1] - self.window-self.shift)
+        idx = np.arange(self.win_c + self.shift, f_in.shape[-1] - self.window - self.shift)
         if len(f_in.shape) == 3:
             frm = '3d'
             newTraces = np.full(f_in.shape, np.nan, dtype=np.float32)
@@ -110,7 +110,7 @@ class Mixer(di_app.DiAppSeismic3D2D):
                     else:
                         indC = [i, j]
                         indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
-                        mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx,self.win_c, att_vec)
+                        mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
                         newTraces[indC[0],indC[1], self.win_c + self.shift: f_in.shape[2] - self.window - self.shift] = mix_sig
         elif len(f_in.shape) == 2:
             frm = '2d'
@@ -125,7 +125,7 @@ class Mixer(di_app.DiAppSeismic3D2D):
                 else:
                     indC = i
                     indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
-                    mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx,self.win_c, att_vec)
+                    mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
                     newTraces[indC[0],indC[1], self.win_c + self.shift: f_in.shape[2] - self.window - self.shift] = mix_sig
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
