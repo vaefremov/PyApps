@@ -205,7 +205,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
             except Exception as e:
                 LOG.error(f"Exception: {e}")
 
-    return np.nanmin(new_fr_min),np.nanmax(new_fr_max),np.nanmean(new_fr_mean),np.nanmedian(new_fr_median),new_count, pocket
+    return np.nanmin(new_fr_min),np.nanmax(new_fr_max),np.nanmean(new_fr_mean),np.nanmedian(new_fr_median),new_count, pocket, pock
     
 class statistic_horizont(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
@@ -226,11 +226,11 @@ if __name__ == "__main__":
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
     
-    new_min,new_max,new_mean,new_median, raspr, pocket_value = compute_slice(cube_in, hor1, hor2,num_worker)
+    new_min,new_max,new_mean,new_median, raspr, pocket_value, step_pock = compute_slice(cube_in, hor1, hor2,num_worker)
     ind_non_zero = np.where(raspr !=0)[0]
     raspr_non_zero = raspr[ind_non_zero[0]:ind_non_zero[-1]+1]
     value_non_zero = pocket_value[ind_non_zero[0]:ind_non_zero[-1]+1]
-    LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
+    LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=} {step_pock=}")
     LOG.info(f"raspr")
     stat = {
             "data_max": float(new_max),
@@ -238,9 +238,9 @@ if __name__ == "__main__":
             "data_mean": float(new_mean),
             "data_median": float(new_median),
             "first_value": value_non_zero[0],
+            "step_pock": step_pock,
             "data_var": None,
-            "additional_data": {"raspr": [int(i) for i in raspr_non_zero], 
-                                "pocket_value": [float(i) for i in value_non_zero]},
+            "additional_data": {"raspr": [int(i) for i in raspr_non_zero]},
         }
     cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
