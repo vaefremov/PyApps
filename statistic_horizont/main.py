@@ -56,7 +56,7 @@ def cut_intervals(y, ind1, ind2):
                     y_out[i,j,ind_1:ind_2] = y[i,j,ind_1:ind_2]
     return y_out.flatten()
         
-def value_distribution(y, pocket,min_y,max_y):
+def value_distribution(y_values, pocket):
     b1 = np.zeros(len(pocket), dtype=int)
     pocket_array = np.array(pocket)
     if len(y_values) == 1 and np.isnan(y_values[0]):
@@ -114,7 +114,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
             fr_mean = np.nanmean( new_fr)
             fr_median = np.nanmedian( new_fr)
             if len(pocket) != 0:
-                raspr_count = value_distribution(new_fr, pocket,fr_min,fr_max)
+                raspr_count = value_distribution(new_fr, pocket)
             else:
                 raspr_count = []
 
