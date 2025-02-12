@@ -42,30 +42,26 @@ def distance_to_center(fragment,center_x, center_y):
     return np.sqrt((center_x - center_x_frag) ** 2 + (center_y - center_y_frag) ** 2)
         
 def cut_intervals(y, ind1, ind2):
-    y_out = []
-    if ind2 is not None:    
-        for i in range(y.shape[0]):
-            for j in range(y.shape[1]):
-                if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all() or np.isnan(ind2[i,j]):
-                    y_out.append([np.nan])
+    y_out = np.full((y.shape[0],y.shape[1],y.shape[2]), np.nan,dtype = np.float32)
+    for i in range(y.shape[0]):
+        for j in range(y.shape[1]):
+            if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all() or np.isnan(ind2[i,j]):
+                continue
+            else:
+                ind_1 = int(ind1[i,j])
+                ind_2 = int(ind2[i,j])
+                if np.isnan(y[i,j,ind_1]) or np.isnan(y[i,j,ind_2]):
                     continue
                 else:
-                    ind_1 = int(ind1[i,j])
-                    ind_2 = int(ind2[i,j])
-                    if np.isnan(y[i,j,ind_1]) or np.isnan(y[i,j,ind_2]):
-                        y_out.append([np.nan])
-                        continue
-                    else:
-                        y_out.append(y[i,j,ind_1:ind_2])
-    return y_out
+                    y_out[i,j,ind_1:ind_2] = y[i,j,ind_1:ind_2]
+    return y_out.flatten()
         
 def value_distribution(y, pocket,min_y,max_y):
     b1 = np.zeros(len(pocket), dtype=int)
     pocket_array = np.array(pocket)
-    #print(pocket_array.shape)
-    for y_values in y:
-        if len(y_values) == 1 and np.isnan(y_values[0]):
-            continue  
+    if len(y_values) == 1 and np.isnan(y_values[0]):
+        return []
+    else:
         y_values = y_values[~np.isnan(y_values)]
 
         # Ищем индексы ближайших значений
@@ -78,9 +74,7 @@ def value_distribution(y, pocket,min_y,max_y):
 
         unique, counts = np.unique(nearest_values, return_counts=True)
 
-        for value, count in zip(unique, counts):
-            index = np.where(pocket_array == value)[0][0]
-            b1[index] += count
+        b1[np.searchsorted(pocket_array, unique)] += counts
     
     return b1
 
@@ -110,15 +104,15 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
         indxs2 = np.round((grid_hor2-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
-        if fr is None:
+        if fr is None or np.all(np.isnan(fr)) == True:
             return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
         else:
             fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
             new_fr = cut_intervals(fr,indxs1,indxs2)
-            fr_min = np.nanmin(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
-            fr_max = np.nanmax(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
-            fr_mean = np.nanmean(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
-            fr_median = np.nanmedian(np.concatenate([arr[~np.isnan(arr)] for arr in new_fr if len(arr) > 0 and not np.all(np.isnan(arr))]))
+            fr_min = np.nanmin( new_fr)
+            fr_max = np.nanmax( new_fr)
+            fr_mean = np.nanmean( new_fr)
+            fr_median = np.nanmedian( new_fr)
             if len(pocket) != 0:
                 raspr_count = value_distribution(new_fr, pocket,fr_min,fr_max)
             else:
@@ -233,6 +227,9 @@ if __name__ == "__main__":
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
     
     new_min,new_max,new_mean,new_median, raspr, pocket_value = compute_slice(cube_in, hor1, hor2,num_worker)
+    ind_non_zero = np.where(raspr !=0)[0]
+    raspr_non_zero = raspr[ind_non_zero[0]:ind_non_zero[-1]+1]
+    value_non_zero = pocket_value[ind_non_zero[0]:ind_non_zero[-1]+1]
     LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=}")
     LOG.info(f"raspr")
     stat = {
@@ -240,9 +237,10 @@ if __name__ == "__main__":
             "data_min": float(new_min),
             "data_mean": float(new_mean),
             "data_median": float(new_median),
+            "first_value": value_non_zero[0],
             "data_var": None,
-            "additional_data": {"raspr": [int(i) for i in raspr], 
-                                "pocket_value": [float(i) for i in pocket_value]},
+            "additional_data": {"raspr": [int(i) for i in raspr_non_zero], 
+                                "pocket_value": [float(i) for i in value_non_zero]},
         }
     cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
