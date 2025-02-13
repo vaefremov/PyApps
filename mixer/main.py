@@ -31,6 +31,7 @@ def corelater(traces,shift,window,p,indC,idx,win_c,att_vec):
     not_nan_idx = ~np.isnan(data).all(axis=1)
     att_vec = att_vec[not_nan_idx]
     data = data[not_nan_idx]
+    mix = np.full(x.shape[-1],np.nan)
     if shift == 0:
         mix = x + np.sum((data * att_vec[:,None]),axis=0)
     else:
@@ -45,6 +46,8 @@ def corelater(traces,shift,window,p,indC,idx,win_c,att_vec):
         # Выбор соответствующих трасс из data
         result = data[np.arange(data.shape[0])[:, None], all_idx]
         mix = x[win_c + shift: x.shape[0] - window-shift] + np.sum((result * att_vec[:,None]),axis=0)
+        mix[:win_c+shift] = x[:win_c + shift] + np.sum((data[:,:win_c + shift] * att_vec[:,None]),axis=0)
+        mix[x.shape[-1] - window-shift:] = x[x.shape[-1]- window - shift:] + np.sum((data[:,data.shape[-1] - window - shift:] * att_vec[:,None]),axis=0)
     return mix /(1.+np.sum(att_vec))
 
 def nokta(c, frm, halfwin_traces, type_neighbors):
@@ -111,7 +114,7 @@ class Mixer(di_app.DiAppSeismic3D2D):
                         indC = [i, j]
                         indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
                         mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
-                        newTraces[indC[0],indC[1], self.win_c + self.shift: f_in.shape[2] - self.window - self.shift] = mix_sig
+                        newTraces[indC[0], indC[1], :] = mix_sig
         elif len(f_in.shape) == 2:
             frm = '2d'
             att_vec = np.zeros(self.halfwin_traces * 2)
@@ -126,7 +129,7 @@ class Mixer(di_app.DiAppSeismic3D2D):
                     indC = i
                     indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
                     mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
-                    newTraces[indC[0],indC[1], self.win_c + self.shift: f_in.shape[2] - self.window - self.shift] = mix_sig
+                    newTraces[indC[0], indC[1], :] = mix_sig
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
         newTraces = newTraces.astype('float32')
