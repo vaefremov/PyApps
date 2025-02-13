@@ -2,6 +2,8 @@ from abc import ABCMeta, abstractmethod
 import logging
 from collections import namedtuple
 import numpy as np
+import requests
+import json 
 
 LOG = logging.getLogger(__name__)
 
@@ -57,6 +59,26 @@ class di_objects:
             pass
         def SeisLineWriter():
             pass
+
+class DiJob:
+    def __init__(self, job_id: int) -> None:
+        self.job_id = job_id
+        self.server_url = ""
+        self._description = None
+
+    @property
+    def description(self):
+        if self._description is None:
+            with requests.get(f"{self.server_url}/jobs/info/{self.job_id}/") as resp:
+                if resp.status_code != 200:
+                    LOG.error(f"unable to get job description from {self.server_url} for {self.job_id}")
+                    raise RuntimeError(f"unable to get job description from {self.server_url} for {self.job_id}")
+                resp_j = json.loads(resp.content)
+                self._description = resp_j["job_description"]
+        return self._description
+
+
+
 
 class DIJob(metaclass=ABCMeta):
     def __init__(self, runargs_filename, job_id, session_id=None, db_server_url=None):
