@@ -5,6 +5,7 @@ import sys
 from .seismic_cube import DISeismicCube, DISeismicCubeWriter
 from .seismic_line import DISeismicLine, DISeismicLineWriter
 from .attribute import DIAttribute2D, DIHorizon3D, DIHorizon3DWriter
+from .di_job import DiJob
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -215,3 +216,8 @@ class DISession:
             if resp.status_code != 200:
                 LOG.error("Delete failed: %s  / %s", resp.status_code, resp.content)
                 raise RuntimeError(f"Delete failed: {resp.status_code=}")
+
+    def get_job_by_id(self, job_id):
+        job = DiJob(job_id)
+        job.server_url = self.server_url
+        return job
