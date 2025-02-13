@@ -20,7 +20,7 @@
           "name": "halfwin_traces",
           "type": "SpinBox",
           "title": "Halfwindow traces",
-          "default": 1,
+          "default": 2,
           "min": 0,
           "max": 5
         },
@@ -40,7 +40,7 @@
           "items": ["square","cross"]
         },
         { "name": "Threads Count", "type": "SpinBox", "min": 1, "max": 100, "default": 15 },
-        {"name": "margin", "type": "CustomInt", "default": 1}
+        {"name": "margin", "type": "CustomInt", "default": 3}
       ]
     }
   }
