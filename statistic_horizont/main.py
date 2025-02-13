@@ -170,7 +170,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
         new_fr_mean.append(fr_mean1)
         new_fr_median.append(fr_median1)
     pock = auto_round((np.max(new_fr_max) - np.min(new_fr_min))/1000) # Находим резмеры кармана, шаг
-    pocket = np.arange(auto_round(np.min(new_fr_min))-10000*pock, auto_round(np.max(new_fr_max))+10000*pock, pock)
+    pocket = np.arange(auto_round(np.min(new_fr_min))-10000*pock, auto_round(np.max(new_fr_max))+10000*pock-1, pock)
     
     len_cube = len(new_grid_not)# Количество фрагметов большого куба
     new_count = np.zeros(len(pocket), dtype=int)
