@@ -88,9 +88,8 @@ class Mixer(di_app.DiAppSeismic3D2D):
         self.win_c = self.window +1
         self.window = 0 if self.shift == 0 else  self.window
         self.win_c = 0 if self.shift == 0 else  self.win_c
-        self.margin = self.description["margin"]
         if self.description["halfwin_traces"]>1:
-            self.margin = self.description["halfwin_traces"]
+            self._margin = self.description["halfwin_traces"]
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
         if self.type_neighbors == "square":
