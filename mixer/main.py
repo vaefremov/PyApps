@@ -45,7 +45,7 @@ def corelater(traces,shift,window,p,indC,idx,win_c,att_vec):
         all_idx = idx + cor_idx 
         # Выбор соответствующих трасс из data
         result = data[np.arange(data.shape[0])[:, None], all_idx]
-        mix = x[win_c + shift: x.shape[0] - window-shift] + np.sum((result * att_vec[:,None]),axis=0)
+        mix[win_c + shift: x.shape[0] - window-shift] = x[win_c + shift: x.shape[0] - window-shift] + np.sum((result * att_vec[:,None]),axis=0)
         mix[:win_c+shift] = x[:win_c + shift] + np.sum((data[:,:win_c + shift] * att_vec[:,None]),axis=0)
         mix[x.shape[-1] - window-shift:] = x[x.shape[-1]- window - shift:] + np.sum((data[:,data.shape[-1] - window - shift:] * att_vec[:,None]),axis=0)
     return mix /(1.+np.sum(att_vec))
@@ -88,6 +88,8 @@ class Mixer(di_app.DiAppSeismic3D2D):
         self.win_c = self.window +1
         self.window = 0 if self.shift == 0 else  self.window
         self.win_c = 0 if self.shift == 0 else  self.win_c
+        if self.description["halfwin_traces"]>1:
+            self._margin = self.description["halfwin_traces"]
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         tm_start = time.time()
         if self.type_neighbors == "square":
