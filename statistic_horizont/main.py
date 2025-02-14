@@ -22,10 +22,10 @@ LOG = logging.getLogger(__name__)
 
 incr_i = 100
 incr_x = 100
-num_worker = 10
+num_worker = 20
 completed_frag = 0
 total_frag = 0
-num_center_fragments = 2 # Количество центральных фрагментов, который в дальнейшем можно автоматизировать
+num_center_fragments = 3 # Количество центральных фрагментов, который в дальнейшем можно автоматизировать
 
 def move_progress(f: Future):
     global completed_frag
