@@ -20,8 +20,8 @@ import time
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
-incr_i = 100
-incr_x = 100
+incr_i = 200
+incr_x = 200
 num_worker = 20
 completed_frag = 0
 total_frag = 0
