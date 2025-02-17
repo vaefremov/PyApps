@@ -7,14 +7,18 @@
         { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "ListView" },
         { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes|SeismicDataGeoms3DNames", "collectChildren": true, "type": "ListView" },
         { "name": "New Name", "type": "LineEdit", "default": "Result" },
-        {
-          "name": "num_worker",
+        { "name": "num_worker",
           "type": "SpinBox",
           "title": "Количество процессов",
           "default": 16,
           "min": 1,
-          "max": 60
-        }
+          "max": 60 },
+        { "name": "chank_size",
+          "type": "SpinBox",
+          "title": "Размер чанка",
+          "default": 150,
+          "min": 50,
+          "max": 500 }
     ]
   }
 }
