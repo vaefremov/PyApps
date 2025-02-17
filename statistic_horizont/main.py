@@ -223,8 +223,8 @@ if __name__ == "__main__":
     num_worker = job.description["num_worker"]
     global  incr_i, incr_x
     
-    incr_i = job.description["chanc_size"]
-    incr_x = job.description["chanc_size"]
+    incr_i = job.description["chank_size"]
+    incr_x = job.description["chank_size"]
     hor_name1 = job.description["Horizon"][0]
     hor_name2 = job.description["Horizon"][1]
     #type_interpolation = job.description["interpolation"]
