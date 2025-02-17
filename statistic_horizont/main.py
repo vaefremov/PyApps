@@ -22,7 +22,7 @@ LOG = logging.getLogger(__name__)
 
 incr_i = 150
 incr_x = 150
-num_worker = 16
+#num_worker = 16
 completed_frag = 0
 total_frag = 0
 num_center_fragments = 3 # Количество центральных фрагментов, который в дальнейшем можно автоматизировать
@@ -220,6 +220,7 @@ if __name__ == "__main__":
     tm_start = time.time()
     job = statistic_horizont()
     cube_in = job.open_input_dataset()
+    num_worker = job.description["num_worker"]
     hor_name1 = job.description["Horizon"][0]
     hor_name2 = job.description["Horizon"][1]
     #type_interpolation = job.description["interpolation"]

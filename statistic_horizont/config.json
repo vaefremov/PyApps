@@ -7,6 +7,14 @@
         { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "ListView" },
         { "name": "Input Seismic3D Names", "inputDataType": "SeismicDataGeoms3DCubes|SeismicDataGeoms3DNames", "collectChildren": true, "type": "ListView" },
         { "name": "New Name", "type": "LineEdit", "default": "Result" }   
+        {
+          "name": "num_worker",
+          "type": "SpinBox",
+          "title": "Количество процессов",
+          "default": 16,
+          "min": 1,
+          "max": 60
+        }
     ]
   }
 }
