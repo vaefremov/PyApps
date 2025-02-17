@@ -172,10 +172,14 @@ class DISeismicCube:
             gr_arr.shape = (ninlines, ncdps, nz)
             return gr_arr
 
-    def get_inline(self, inline_no: int, trimmed: bool=True) -> np.ndarray:
+    def get_inline(self, inline_no: int, trimmed: bool=True, top_ind: Optional[int]=None, bottom_ind: Optional[int] = None) -> np.ndarray:
         url = f"{self.server_url}/seismic_3d/data/inline/{self.cube_id}/?inline_no={inline_no}"
         if trimmed:
             url = f"{self.server_url}/seismic_3d/data/inline_trim/{self.cube_id}/?inline_no={inline_no}"
+        if top_ind is not None:
+            url += f"&top_no={top_ind}"
+        if bottom_ind is not None:
+            url += f"&bottom_no={bottom_ind}"
         with requests.get(url) as resp:
             bytes_read = len(resp.content)
             raw_data = resp.content
@@ -199,10 +203,14 @@ class DISeismicCube:
             return gr_arr
 
 
-    def get_xline(self, xline_no: int, trimmed: bool=True) -> np.ndarray:
+    def get_xline(self, xline_no: int, trimmed: bool=True, top_ind: Optional[int]=None, bottom_ind: Optional[int] = None) -> np.ndarray:
         url = f"{self.server_url}/seismic_3d/data/xline/{self.cube_id}/?xline_no={xline_no}"
         if trimmed:
             url = f"{self.server_url}/seismic_3d/data/xline_trim/{self.cube_id}/?xline_no={xline_no}"
+        if top_ind is not None:
+            url += f"&top_no={top_ind}"
+        if bottom_ind is not None:
+            url += f"&bottom_no={bottom_ind}"
         with requests.get(url) as resp:
             bytes_read = len(resp.content)
             raw_data = resp.content
