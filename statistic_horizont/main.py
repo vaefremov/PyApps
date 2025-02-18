@@ -92,10 +92,10 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
-def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket,n,mean,M2):
+def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     if np.all(np.isnan(grid_hor1)) == True :
-        return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,n,mean,M2
+        return np.nan, np.nan, np.nan, np.nan, np.nan,np.nan,np.nan
     else:
         index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor2))))
         index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor1))))
@@ -105,37 +105,31 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket,n,
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
         if fr is None or np.all(np.isnan(fr)) == True:
-            return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,n,mean,M2
+            return np.nan, np.nan, np.nan, np.nan, np.nan,  np.nan, np.nan
         else:
             fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
             new_fr = cut_intervals(fr,indxs1,indxs2)
-            new_fr = new_fr[~np.isnan(new_fr)]
-            for value in new_fr:
-                n += 1
-                delta = value - mean
-                mean += delta / n
-                M2 += delta * (value - mean)
             fr_min = np.nanmin( new_fr)
             fr_max = np.nanmax( new_fr)
             fr_mean = np.nanmean( new_fr)
+            fr_var  = np.nanvar( new_fr)
             fr_median = np.nanmedian( new_fr)
+            n_count = np.count_nonzero(~np.isnan(new_fr))
             if len(pocket) != 0:
                 raspr_count = value_distribution(new_fr, pocket)
             else:
                 raspr_count = []
 
-    return fr_min, fr_max, fr_mean, fr_median, pocket,raspr_count,n,mean,M2
+    return fr_min, fr_max, fr_mean, fr_var, fr_median, raspr_count, n_count
 
 def compute_slice(cube_in, hor1, hor2,num_worker):
     new_fr_min = []
     new_fr_max = []
-    new_fr_mean = []
     new_fr_median = []
     pocket = []
-    n = 0
-    mean = 0.0
-    M2 = 0.0
-    
+    cube_count = 0
+    cube_mean  = 0 
+    cube_var   = 0
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata01 = hor1.get_data()
     hdata01 = np.where((hdata01>= 0.1*MAXFLOAT) | (hdata01== np.inf), np.nan, hdata01)
@@ -169,15 +163,23 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     # Исключаем центральные фрагменты, чтобы не пересчитывать эти фрагменты повторно
     new_grid_not = [frag for i, frag in enumerate(grid_not) if i not in central_indices]
     new_grid_real = [frag for i, frag in enumerate(grid_real) if i not in central_indices]
-    
+
     for i in central_indices:
         grid_hor_centr1 = hdata1[grid_not[i][0]:grid_not[i][0] + grid_not[i][1],grid_not[i][2]:grid_not[i][2] + grid_not[i][3]]
         grid_hor_centr2 = hdata2[grid_not[i][0]:grid_not[i][0] + grid_not[i][1],grid_not[i][2]:grid_not[i][2] + grid_not[i][3]]
-        fr_minpock1, fr_maxpock1, fr_mean1, fr_median1,pocket1,raspr_count1,n,mean,M2 = compute_fragment(i,cube_in,grid_hor_centr1,grid_hor_centr2,cube_time,grid_real,pocket,n,mean,M2)
-        new_fr_min.append(fr_minpock1)
-        new_fr_max.append(fr_maxpock1)
-        new_fr_mean.append(fr_mean1)
-        new_fr_median.append(fr_median1)
+        fr_minpock1, fr_maxpock1, fr_mean1, fr_var1, fr_median1, raspr_count1, fr_n_count1 = compute_fragment(i,cube_in,grid_hor_centr1,grid_hor_centr2,cube_time,grid_real,pocket)
+        if not np.isnan(fr_n_count1) :
+            delta = fr_mean1 - cube_mean
+            new_count  = cube_count + fr_n_count1
+            new_cube_mean = cube_mean + delta * fr_n_count1 / new_count
+            cube_mean = new_cube_mean
+            new_cube_var = cube_var + fr_var1 + delta**2 * fr_n_count1 * cube_count / new_count
+            cube_count = new_count
+            cube_var = new_cube_var / (cube_count-1)
+
+            new_fr_min.append(fr_minpock1)
+            new_fr_max.append(fr_maxpock1)
+            new_fr_median.append(fr_median1)
     pock = auto_round((np.max(new_fr_max) - np.min(new_fr_min))/1000) # Находим резмеры кармана, шаг
     pocket = np.arange(auto_round(np.min(new_fr_min))-10000*pock, auto_round(np.max(new_fr_max))+10000*pock-1, pock)
     
@@ -198,28 +200,25 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
 
         # completed_frag = 0
         for f in as_completed(futures):
-
             try:
-                fr_min1, fr_max1, fr_mean1, fr_median1,pocket1,raspr_count1,n,mean,M2 = f.result()
-                
-                #LOG.debug(f"Returned {z=}")
-                new_fr_min.append(fr_min1)
-                new_fr_max.append(fr_max1)
-                new_fr_mean.append(fr_mean1)
-                new_fr_median.append(fr_median1)
-                if np.all(np.isnan(raspr_count1)) != True:
-                    new_count += raspr_count1
-                
-                #LOG.debug(f"After writing to new_zr_all {z=}")
+                fr_min1, fr_max1, fr_mean1, fr_var1, fr_median1, raspr_count1, fr_n_count1 = f.result()
+                if not np.isnan(fr_n_count1):
+                    #LOG.debug(f"Returned {z=}")
+                    new_fr_min.append(fr_min1)
+                    new_fr_max.append(fr_max1)
+                    delta = fr_mean1 - cube_mean
+                    new_count  = cube_count + fr_n_count1
+                    new_cube_mean = cube_mean + delta * fr_n_count1 / new_count
+                    cube_mean = new_cube_mean
+                    new_cube_var = cube_var + fr_var1 + delta**2 * fr_n_count1 * cube_count / new_count
+                    cube_count = new_count
+                    cube_var = new_cube_var / (cube_count-1)
+                    new_fr_median.append(fr_median1)
+                    if np.all(np.isnan(raspr_count1)) != True:
+                        new_count += raspr_count1
             except Exception as e:
                 LOG.error(f"Exception: {e}")
-
-        if n > 1:
-            final_fr_var = M2 / n
-        else:
-            final_fr_var = np.nan
-
-    return np.nanmin(new_fr_min),np.nanmax(new_fr_max),np.nanmean(new_fr_mean),np.nanmedian(new_fr_median),new_count, pocket, pock, final_fr_var
+    return np.nanmin(new_fr_min), np.nanmax(new_fr_max), cube_mean, cube_var, np.nanmedian(new_fr_median), new_count, pocket, pock
     
 class statistic_horizont(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
@@ -245,7 +244,7 @@ if __name__ == "__main__":
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
     
-    new_min,new_max,new_mean,new_median, raspr, pocket_value, step_pock,fr_var = compute_slice(cube_in, hor1, hor2,num_worker)
+    new_min, new_max, new_mean, fr_var, new_median, raspr, pocket_value, step_pock = compute_slice(cube_in, hor1, hor2,num_worker)
     ind_non_zero = np.where(raspr !=0)[0]
     raspr_non_zero = raspr[ind_non_zero[0]:ind_non_zero[-1]+1]
     value_non_zero = pocket_value[ind_non_zero[0]:ind_non_zero[-1]+1]
