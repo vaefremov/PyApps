@@ -193,7 +193,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
         for k in range(len(new_grid_not)):
             grid_hor1 = hdata1[new_grid_not[k][0]:new_grid_not[k][0] + new_grid_not[k][1],new_grid_not[k][2]:new_grid_not[k][2] + new_grid_not[k][3]]
             grid_hor2 = hdata2[new_grid_not[k][0]:new_grid_not[k][0] + new_grid_not[k][1],new_grid_not[k][2]:new_grid_not[k][2] + new_grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,new_grid_real,pocket,n,mean,M2)
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,new_grid_real,pocket)
             f.add_done_callback(move_progress)
             futures.append(f)
             LOG.debug(f"Submitted: {k=}")
