@@ -256,11 +256,10 @@ if __name__ == "__main__":
             "data_min": float(new_min),
             "data_mean": float(new_mean),
             "data_median": float(new_median),
-            "data_var": None,
+            "data_var": fr_var,
             "additional_data": {"raspr": [int(i) for i in raspr_non_zero],
                                     "first_value": value_non_zero[0],
-                                    "step_pock": step_pock,
-                                    "fr_var": fr_var
+                                    "step_pock": step_pock
                                 },
         }
     cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
