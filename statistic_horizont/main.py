@@ -20,9 +20,9 @@ import time
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
-incr_i = 200
-incr_x = 200
-num_worker = 20
+#incr_i = 150
+#incr_x = 150
+#num_worker = 16
 completed_frag = 0
 total_frag = 0
 num_center_fragments = 3 # Количество центральных фрагментов, который в дальнейшем можно автоматизировать
@@ -234,6 +234,11 @@ if __name__ == "__main__":
     tm_start = time.time()
     job = statistic_horizont()
     cube_in = job.open_input_dataset()
+    num_worker = job.description["num_worker"]
+    global  incr_i, incr_x
+    
+    incr_i = job.description["chank_size"]
+    incr_x = job.description["chank_size"]
     hor_name1 = job.description["Horizon"][0]
     hor_name2 = job.description["Horizon"][1]
     #type_interpolation = job.description["interpolation"]
