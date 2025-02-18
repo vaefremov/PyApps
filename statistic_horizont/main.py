@@ -92,10 +92,10 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
-def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
+def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket,n,mean,M2):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     if np.all(np.isnan(grid_hor1)) == True :
-        return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,n,mean,M2
     else:
         index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor2))))
         index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor1))))
@@ -105,10 +105,16 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
         if fr is None or np.all(np.isnan(fr)) == True:
-            return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+            return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,n,mean,M2
         else:
             fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
             new_fr = cut_intervals(fr,indxs1,indxs2)
+            new_fr = new_fr[~np.isnan(new_fr)]
+            for value in new_fr:
+                n += 1
+                delta = value - mean
+                mean += delta / n
+                M2 += delta * (value - mean)
             fr_min = np.nanmin( new_fr)
             fr_max = np.nanmax( new_fr)
             fr_mean = np.nanmean( new_fr)
@@ -118,7 +124,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
             else:
                 raspr_count = []
 
-    return fr_min, fr_max, fr_mean, fr_median, pocket,raspr_count
+    return fr_min, fr_max, fr_mean, fr_median, pocket,raspr_count,n,mean,M2
 
 def compute_slice(cube_in, hor1, hor2,num_worker):
     new_fr_min = []
@@ -126,6 +132,9 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     new_fr_mean = []
     new_fr_median = []
     pocket = []
+    n = 0
+    mean = 0.0
+    M2 = 0.0
     
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata01 = hor1.get_data()
@@ -164,7 +173,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
     for i in central_indices:
         grid_hor_centr1 = hdata1[grid_not[i][0]:grid_not[i][0] + grid_not[i][1],grid_not[i][2]:grid_not[i][2] + grid_not[i][3]]
         grid_hor_centr2 = hdata2[grid_not[i][0]:grid_not[i][0] + grid_not[i][1],grid_not[i][2]:grid_not[i][2] + grid_not[i][3]]
-        fr_minpock1, fr_maxpock1, fr_mean1, fr_median1,pocket1,raspr_count1 = compute_fragment(i,cube_in,grid_hor_centr1,grid_hor_centr2,cube_time,grid_real,pocket)
+        fr_minpock1, fr_maxpock1, fr_mean1, fr_median1,pocket1,raspr_count1,n,mean,M2 = compute_fragment(i,cube_in,grid_hor_centr1,grid_hor_centr2,cube_time,grid_real,pocket,n,mean,M2)
         new_fr_min.append(fr_minpock1)
         new_fr_max.append(fr_maxpock1)
         new_fr_mean.append(fr_mean1)
@@ -182,7 +191,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
         for k in range(len(new_grid_not)):
             grid_hor1 = hdata1[new_grid_not[k][0]:new_grid_not[k][0] + new_grid_not[k][1],new_grid_not[k][2]:new_grid_not[k][2] + new_grid_not[k][3]]
             grid_hor2 = hdata2[new_grid_not[k][0]:new_grid_not[k][0] + new_grid_not[k][1],new_grid_not[k][2]:new_grid_not[k][2] + new_grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,new_grid_real,pocket)
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,cube_time,new_grid_real,pocket,n,mean,M2)
             f.add_done_callback(move_progress)
             futures.append(f)
             LOG.debug(f"Submitted: {k=}")
@@ -191,7 +200,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
         for f in as_completed(futures):
 
             try:
-                fr_min1, fr_max1, fr_mean1, fr_median1,pocket1,raspr_count1 = f.result()
+                fr_min1, fr_max1, fr_mean1, fr_median1,pocket1,raspr_count1,n,mean,M2 = f.result()
                 
                 #LOG.debug(f"Returned {z=}")
                 new_fr_min.append(fr_min1)
@@ -205,7 +214,12 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
             except Exception as e:
                 LOG.error(f"Exception: {e}")
 
-    return np.nanmin(new_fr_min),np.nanmax(new_fr_max),np.nanmean(new_fr_mean),np.nanmedian(new_fr_median),new_count, pocket, pock
+        if n > 1:
+            final_fr_var = M2 / n
+        else:
+            final_fr_var = np.nan
+
+    return np.nanmin(new_fr_min),np.nanmax(new_fr_max),np.nanmean(new_fr_mean),np.nanmedian(new_fr_median),new_count, pocket, pock, final_fr_var
     
 class statistic_horizont(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
@@ -226,11 +240,11 @@ if __name__ == "__main__":
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
     
-    new_min,new_max,new_mean,new_median, raspr, pocket_value, step_pock = compute_slice(cube_in, hor1, hor2,num_worker)
+    new_min,new_max,new_mean,new_median, raspr, pocket_value, step_pock,fr_var = compute_slice(cube_in, hor1, hor2,num_worker)
     ind_non_zero = np.where(raspr !=0)[0]
     raspr_non_zero = raspr[ind_non_zero[0]:ind_non_zero[-1]+1]
     value_non_zero = pocket_value[ind_non_zero[0]:ind_non_zero[-1]+1]
-    LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=} {step_pock=}")
+    LOG.info(f"{new_min=} {new_max=} {new_mean=} {new_median=} {fr_var=}")
     LOG.info(f"raspr")
     stat = {
             "data_max": float(new_max),
@@ -241,6 +255,7 @@ if __name__ == "__main__":
             "additional_data": {"raspr": [int(i) for i in raspr_non_zero],
                                     "first_value": value_non_zero[0],
                                     "step_pock": step_pock,
+                                    "fr_var": fr_var
                                 },
         }
     cube_in.save_statistics_for_horizons(hor_name1, hor_name2, stat)
