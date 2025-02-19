@@ -113,7 +113,8 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
             fr_max = np.nanmax( new_fr)
             fr_mean = np.nanmean( new_fr)
             fr_var  = np.nanvar( new_fr)
-            fr_median = np.nanmedian( new_fr)
+            #fr_median = np.nanmedian( new_fr)
+            fr_median = None
             n_count = np.count_nonzero(~np.isnan(new_fr))
             if len(pocket) != 0:
                 raspr_count = value_distribution(new_fr, pocket)
@@ -125,7 +126,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,cube_time,grid_real,pocket):
 def compute_slice(cube_in, hor1, hor2,num_worker):
     new_fr_min = []
     new_fr_max = []
-    new_fr_median = []
+    #new_fr_median = []
     pocket = []
     cube_count = 0
     cube_mean  = 0. 
@@ -179,7 +180,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
             cube_var = new_cube_var / (n_count-1)
             new_fr_min.append(fr_minpock1)
             new_fr_max.append(fr_maxpock1)
-            new_fr_median.append(fr_median1)
+            #new_fr_median.append(fr_median1)
     pock = auto_round((np.max(new_fr_max) - np.min(new_fr_min))/1000) # Находим резмеры кармана, шаг
     pocket = np.arange(auto_round(np.min(new_fr_min))-10000*pock, auto_round(np.max(new_fr_max))+10000*pock-1, pock)
     
@@ -214,12 +215,12 @@ def compute_slice(cube_in, hor1, hor2,num_worker):
                     new_cube_var = cube_var * (cube_count - 1) + fr_var1 * (fr_n_count1 - 1) + delta**2 * fr_n_count1 * cube_count / n_count#
                     cube_count = n_count
                     cube_var = new_cube_var / (n_count-1)
-                    new_fr_median.append(fr_median1)
+                    #new_fr_median.append(fr_median1)
                     if np.all(np.isnan(raspr_count1)) != True:
                         new_count += raspr_count1
             except Exception as e:
                 LOG.error(f"Exception: {e}")
-    return np.nanmin(new_fr_min), np.nanmax(new_fr_max), cube_mean, cube_var, np.nanmedian(new_fr_median), new_count, pocket, pock
+    return np.nanmin(new_fr_min), np.nanmax(new_fr_max), cube_mean, cube_var, None, new_count, pocket, pock
     
 class statistic_horizont(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
@@ -256,7 +257,7 @@ if __name__ == "__main__":
             "data_max": float(new_max),
             "data_min": float(new_min),
             "data_mean": float(new_mean),
-            "data_median": float(new_median),
+            "data_median": new_median,
             "data_var": float(fr_var),
             "additional_data": {"raspr": [int(i) for i in raspr_non_zero],
                                     "first_value": value_non_zero[0],
