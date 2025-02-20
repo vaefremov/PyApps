@@ -273,7 +273,7 @@ class DIAttribute2D(DIHorizon3DWriter):
         with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
             res_status = resp.status_code
             if resp.status_code != 200:
-                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
                 return res_status
             
     def write_horizon_data(self, data_array):
@@ -288,7 +288,7 @@ class DIAttribute2D(DIHorizon3DWriter):
         with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
             res_status = resp.status_code
             if resp.status_code != 200:
-                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
                 return res_status
             
     def write_all_data(self, data_array, layers_names):
@@ -306,7 +306,7 @@ class DIAttribute2D(DIHorizon3DWriter):
         with requests.post(url, data=data, params={"lnm": self._layers_names}, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
             res_status = resp.status_code
             if resp.status_code != 200:
-                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
                 return res_status
 
     @property
