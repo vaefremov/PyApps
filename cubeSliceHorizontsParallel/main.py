@@ -138,8 +138,8 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
     hdata1 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan, dtype = np.float32)
     mask = np.mgrid[cube_in.min_i:cube_in.n_i,cube_in.min_x:cube_in.n_x]
     mask1 = np.mgrid[hor1.min_i:hor1.min_i+hor1.n_i,hor1.min_x:hor1.min_x+hor1.n_x]
-    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<=cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<=cube_in.n_x),True,False)
-    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<=hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<=hor1.min_x+hor1.n_x),True,False)
+    loar1 = np.where((mask1[0]>=cube_in.min_i) & (mask1[0]<cube_in.n_i),True,False) & np.where((mask1[1]>=cube_in.min_x) & (mask1[1]<cube_in.n_x),True,False)
+    loar1h = np.where((mask[0]>=hor1.min_i) & (mask[0]<hor1.min_i+hor1.n_i),True,False) & np.where((mask[1]>=hor1.min_x) & (mask[1]<hor1.min_x+hor1.n_x),True,False)
     hdata1[loar1h] = hdata01[loar1]
     
     hdata02 = hor2.get_data() if hor2 is not None else None 
@@ -148,8 +148,8 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
         hdata2 = np.full((cube_in.n_i-cube_in.min_i,cube_in.n_x-cube_in.min_x), np.nan,dtype = np.float32)
         hdata02 = np.where((hdata02>= 0.1*MAXFLOAT) | (hdata02== np.inf), np.nan, hdata02)
         mask2 = np.mgrid[hor2.min_i:hor2.min_i+hor2.n_i,hor2.min_x:hor2.min_x+hor2.n_x]
-        loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<=cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<=cube_in.n_x),True,False)
-        loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<=hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<=hor2.min_x+hor2.n_x),True,False)
+        loar2 = np.where((mask2[0]>=cube_in.min_i) & (mask2[0]<cube_in.n_i),True,False) & np.where((mask2[1]>=cube_in.min_x) & (mask2[1]<cube_in.n_x),True,False)
+        loar2h = np.where((mask[0]>=hor2.min_i) & (mask[0]<hor2.min_i+hor2.n_i),True,False) & np.where((mask[1]>=hor2.min_x) & (mask[1]<hor2.min_x+hor2.n_x),True,False)
         hdata2[loar2h] = hdata02[loar2]
         if np.nanmean(hdata2) <= np.nanmean(hdata1):
             hdata1, hdata2 = hdata2, hdata1
