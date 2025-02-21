@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r"C:\Users\ИТС\PyApps")
+
 from typing import Optional, Tuple
 import logging
 import numpy as np
@@ -53,7 +56,7 @@ def cut_intervals(y, ind1):
                     y_out.append([np.nan])
                     continue
                 else:
-                    y_out.append(y[i,j,ind_1:ind_1 + 1])
+                    y_out.append(y[i,j,ind_1])
     return y_out
 
 def linear_interpolate_traces(y, c_time, ind1, gr_hor1):
@@ -104,7 +107,7 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
     if np.all(np.isnan(grid_hor)) == True :
-        return h_new_all
+        return z,h_new_all
     else:   
         index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor))))
         index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor))))
@@ -128,7 +131,7 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
                     h_new_all[i,j] = np.nan
                
                 else:
-                    h_new_all[i,j] = fr_intv[k]   
+                    h_new_all[i,j] = fr_intv[k]
     return z,h_new_all
 
 def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker):
