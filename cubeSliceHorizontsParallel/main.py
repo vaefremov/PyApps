@@ -41,19 +41,15 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
 def cut_intervals(y, ind1):
-    y_out = []
-    for i in range(y.shape[0]):
-        for j in range(y.shape[1]):
-            if np.isnan(ind1[i,j]) or np.isnan(y[i,j,:]).all():
-                y_out.append([np.nan])
-                continue
-            else:
-                ind_1 = int(ind1[i,j])
-                if np.isnan(y[i,j,ind_1]):
-                    y_out.append([np.nan])
-                    continue
-                else:
-                    y_out.append(y[i,j,ind_1])
+    mask_invalid = np.isnan(ind1) | np.isnan(y).all(axis=2)
+    
+    y_out = np.full(ind1.shape, np.nan, dtype=y.dtype)
+
+    ind1_fixed = np.where(np.isnan(ind1), 0, ind1).astype(np.int32)
+
+    valid_mask = (~mask_invalid) & (ind1_fixed >= 0) & (ind1_fixed < y.shape[2])
+
+    y_out[valid_mask] = y[valid_mask, ind1_fixed[valid_mask]]
     return y_out
 
 def linear_interpolate_traces(y, c_time, ind1, gr_hor1):
@@ -113,22 +109,23 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
         fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
         indxs1 = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
-        h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
-
+        
         if type_interpolation == "no interpolation":
-            fr_intv = cut_intervals(fr, indxs1)
+            h_new_all = cut_intervals(fr, indxs1)
         if type_interpolation == "linear":
             fr_intv = linear_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
         if type_interpolation == "cubic spline":
             fr_intv = cubic_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
-        for i in range(grid_hor.shape[0]):
-            for j in range(grid_hor.shape[1]):
-                k = i * grid_hor.shape[1] + j
-                if np.isnan(fr_intv[k]).all():
-                    h_new_all[i,j] = np.nan
-               
-                else:
-                    h_new_all[i,j] = fr_intv[k]
+        if type_interpolation != "no interpolation": #### Временно
+            h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
+            for i in range(grid_hor.shape[0]):
+                for j in range(grid_hor.shape[1]):
+                    k = i * grid_hor.shape[1] + j
+                    if np.isnan(fr_intv[k]).all():
+                        h_new_all[i,j] = np.nan
+                
+                    else:
+                        h_new_all[i,j] = fr_intv[k]
     return z,h_new_all
 
 def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker):
