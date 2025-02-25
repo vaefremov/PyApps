@@ -31,7 +31,7 @@ def move_progress(f: Future):
     if f.exception() is None:
         completed_frag += 1
         LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-        job.log_progress("calculation", completed_frag*100 // total_frag)  
+        #job.log_progress("calculation", completed_frag*100 // total_frag)  
 
 def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     inc_i = incr_i
@@ -96,7 +96,7 @@ def cubic_interpolate_traces(y, c_time, ind1, gr_hor1):
                         continue
     return y_out
 
-def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
+def compute_fragment(z,grid_hor):#(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
     #if np.all(np.isnan(grid_hor)) == True :
@@ -169,7 +169,8 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
         futures=[]
         for k in range(len(grid_real)):
             grid_hor3 = hdata3[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor3,cube_time,grid_real,type_interpolation)
+            #f = executor.submit(compute_fragment,k,cube_in,grid_hor3,cube_time,grid_real,type_interpolation)
+            f = executor.submit(compute_fragment,k,grid_hor3)
             f.add_done_callback(move_progress)
             futures.append(f)
             #LOG.debug(f"Submitted: {k=}")
