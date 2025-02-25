@@ -12,7 +12,7 @@ from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
-import cProfile
+#import cProfile
 from typing import List
 
 import time
@@ -110,22 +110,24 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
         fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
         indxs1 = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
         
-        if type_interpolation == "no interpolation":
-            h_new_all = cut_intervals(fr, indxs1)
-        if type_interpolation == "linear":
-            fr_intv = linear_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
-        if type_interpolation == "cubic spline":
-            fr_intv = cubic_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
-        if type_interpolation != "no interpolation": #### Временно
-            h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
-            for i in range(grid_hor.shape[0]):
-                for j in range(grid_hor.shape[1]):
-                    k = i * grid_hor.shape[1] + j
-                    if np.isnan(fr_intv[k]).all():
-                        h_new_all[i,j] = np.nan
-                
-                    else:
-                        h_new_all[i,j] = fr_intv[k]
+        #if type_interpolation == "no interpolation":
+            #h_new_all = cut_intervals(fr, indxs1)
+            #h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
+        #if type_interpolation == "linear":
+        #    fr_intv = linear_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
+        #if type_interpolation == "cubic spline":
+        #    fr_intv = cubic_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
+        #if type_interpolation != "no interpolation": #### Временно
+        #    h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
+        #    for i in range(grid_hor.shape[0]):
+        #        for j in range(grid_hor.shape[1]):
+        #            k = i * grid_hor.shape[1] + j
+        #            if np.isnan(fr_intv[k]).all():
+        #                h_new_all[i,j] = np.nan
+        #        
+        #            else:
+        #                h_new_all[i,j] = fr_intv[k]
+    
     return z,h_new_all
 
 def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker):
@@ -212,8 +214,8 @@ if __name__ == "__main__":
     type_interpolation = job.description["interpolation"]
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
-    #dt = compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker)
-    dt = cProfile.run('compute_slice(cube_in, hor1, hor2, type_interpolation, shift, distance_between, num_worker)')
+    dt = compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker)
+    #dt = cProfile.run('compute_slice(cube_in, hor1, hor2, type_interpolation, shift, distance_between, num_worker)')
     f_out = job.session.create_attribute_2d_writer_for_cube(cube_in, job.description["New Name"], attr_name)
     f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
     f_out.write_data(dt[1])
