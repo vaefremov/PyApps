@@ -172,15 +172,15 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
             f = executor.submit(compute_fragment,k,cube_in,grid_hor3,cube_time,grid_real,type_interpolation)
             f.add_done_callback(move_progress)
             futures.append(f)
-            LOG.debug(f"Submitted: {k=}")
+            #LOG.debug(f"Submitted: {k=}")
 
         for f in as_completed(futures):
 
             try:
                 z,h_new_all = f.result()
                 
-                LOG.debug(f"Returned {z=}")
-                new_zr_all[grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all
+                #LOG.debug(f"Returned {z=}")
+                #new_zr_all[grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all
             except Exception as e:
                 LOG.error(f"Exception: {e}")       
         
