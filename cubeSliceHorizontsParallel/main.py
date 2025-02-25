@@ -12,7 +12,6 @@ from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
-#import cProfile
 from typing import List
 
 import time
@@ -30,8 +29,8 @@ def move_progress(f: Future):
     global completed_frag
     if f.exception() is None:
         completed_frag += 1
-        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-        job.log_progress("calculation", completed_frag*100 // total_frag)  
+        #LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+        #job.log_progress("calculation", completed_frag*100 // total_frag)  
 
 def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     inc_i = incr_i
@@ -112,7 +111,6 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
         
         if type_interpolation == "no interpolation":
             h_new_all = cut_intervals(fr, indxs1)
-            #h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
         if type_interpolation == "linear":
             fr_intv = linear_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
         if type_interpolation == "cubic spline":
@@ -215,7 +213,6 @@ if __name__ == "__main__":
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
     dt = compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker)
-    #dt = cProfile.run('compute_slice(cube_in, hor1, hor2, type_interpolation, shift, distance_between, num_worker)')
     f_out = job.session.create_attribute_2d_writer_for_cube(cube_in, job.description["New Name"], attr_name)
     f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
     f_out.write_data(dt[1])
