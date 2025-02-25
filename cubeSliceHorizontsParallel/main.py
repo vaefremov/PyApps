@@ -99,16 +99,16 @@ def cubic_interpolate_traces(y, c_time, ind1, gr_hor1):
 def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
-    if np.all(np.isnan(grid_hor)) == True :
-        return z,h_new_all
-    else:   
-        index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor))))
-        index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor))))
-        cube_time_new = cube_time[index_min-3:index_max+3]
+    #if np.all(np.isnan(grid_hor)) == True :
+    #    return z,h_new_all
+    #else:   
+        #index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor))))
+        #index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor))))
+        #cube_time_new = cube_time[index_min-3:index_max+3]
 
-        fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
-        fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
-        indxs1 = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
+        #fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
+        #fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
+        #indxs1 = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
         
         #if type_interpolation == "no interpolation":
             #h_new_all = cut_intervals(fr, indxs1)
