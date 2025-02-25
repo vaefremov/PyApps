@@ -30,8 +30,8 @@ def move_progress(f: Future):
     global completed_frag
     if f.exception() is None:
         completed_frag += 1
-        #LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-        #job.log_progress("calculation", completed_frag*100 // total_frag)  
+        LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+        job.log_progress("calculation", completed_frag*100 // total_frag)  
 
 def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     inc_i = incr_i
