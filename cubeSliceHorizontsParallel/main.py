@@ -39,33 +39,34 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
-def cut_intervals(y, ind1):
-    mask_invalid = np.isnan(ind1) | np.isnan(y).all(axis=2)
+def find_fr(y, ind):
+    mask_invalid = np.isnan(ind) | np.isnan(y).all(axis=2)
     
-    y_out = np.full(ind1.shape, np.nan, dtype=y.dtype)
+    y_out = np.full(ind.shape, np.nan, dtype=y.dtype)
 
-    ind1_fixed = np.where(np.isnan(ind1), 0, ind1).astype(np.int32)
+    ind_fixed = np.where(np.isnan(ind), 0, ind).astype(np.int32)
 
-    valid_mask = (~mask_invalid) & (ind1_fixed >= 0) & (ind1_fixed < y.shape[2])
+    valid_mask = (~mask_invalid) & (ind_fixed >= 0) & (ind_fixed < y.shape[2])
 
-    y_out[valid_mask] = y[valid_mask, ind1_fixed[valid_mask]]
+    y_out[valid_mask] = y[valid_mask, ind_fixed[valid_mask]]
+    
     return y_out
 
-def linear_interpolate_traces(y, c_time, ind1, gr_hor1):
+def linear_interpolate_traces(y, c_time, ind, gr_hor):
     y_out  = []               
     for i in range(y.shape[0]):
         for j in range(y.shape[1]):
-            if np.isnan(gr_hor1[i,j]) or np.isnan(y[i,j,:]).all():
+            if np.isnan(gr_hor[i,j]) or np.isnan(y[i,j,:]).all():
                 y_out.append([np.nan])
                 continue
             else:
-                ind_1 = int(ind1[i,j])
+                ind_1 = int(ind[i,j])
                 if np.isnan(y[i,j,ind_1]):
                     y_out.append([np.nan])
                     continue
                 else:
                     good_idx = np.where( np.isfinite(y[i,j,:]) )
-                    x0 = gr_hor1[i,j]
+                    x0 = gr_hor[i,j]
                     try :
                         y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
                     except:
@@ -73,21 +74,21 @@ def linear_interpolate_traces(y, c_time, ind1, gr_hor1):
                         continue
     return y_out
 
-def cubic_interpolate_traces(y, c_time, ind1, gr_hor1):
+def cubic_interpolate_traces(y, c_time, ind, gr_hor):
     y_out = []
     for i in range(y.shape[0]):
         for j in range(y.shape[1]):
-            if np.isnan(gr_hor1[i,j]) or np.isnan(y[i,j,:]).all():
+            if np.isnan(gr_hor[i,j]) or np.isnan(y[i,j,:]).all():
                 y_out.append([np.nan])
                 continue
             else:
-                ind_1 = int(ind1[i,j])
+                ind_1 = int(ind[i,j])
                 if np.isnan(y[i,j,ind_1]):
                     y_out.append([np.nan])
                     continue
                 else:
                     good_idx = np.where( np.isfinite(y[i,j,:]) )
-                    x0 = gr_hor1[i,j]
+                    x0 = gr_hor[i,j]
                     try :
                         y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
                     except:
@@ -97,9 +98,9 @@ def cubic_interpolate_traces(y, c_time, ind1, gr_hor1):
 
 def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
     MAXFLOAT = float(np.finfo(np.float32).max) 
-    h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
+    frag_result = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
     if np.all(np.isnan(grid_hor)) == True :
-        return z,h_new_all
+        return z,frag_result
     else:   
         index_max = np.argmin(np.abs(cube_time-np.nanmax(np.round(grid_hor))))
         index_min = np.argmin(np.abs(cube_time-np.nanmin(np.round(grid_hor))))
@@ -107,26 +108,25 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
 
         fr = cube_in.get_fragment_z(grid_real[z][0],grid_real[z][1], grid_real[z][2],grid_real[z][3],index_min-3,((index_max+3)-(index_min-3)))
         fr = np.where((fr>= 0.1*MAXFLOAT) | (fr== np.inf), np.nan, fr)
-        indxs1 = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0]))
+        ind = np.round((grid_hor-cube_time_new[0])/(cube_time_new[1] - cube_time_new[0])) #нахождение индекса ближайшего значения
         
         if type_interpolation == "no interpolation":
-            h_new_all = cut_intervals(fr, indxs1)
+            frag_result = find_fr(fr, ind) # поиск значений в кубе
         if type_interpolation == "linear":
-            fr_intv = linear_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
+            fr_intv = linear_interpolate_traces(fr, cube_time_new, ind, grid_hor)
         if type_interpolation == "cubic spline":
-            fr_intv = cubic_interpolate_traces(fr, cube_time_new, indxs1, grid_hor)
+            fr_intv = cubic_interpolate_traces(fr, cube_time_new, ind, grid_hor)
         if type_interpolation != "no interpolation": #### Временно
-            h_new_all = np.full((grid_hor.shape[0],grid_hor.shape[1]), np.nan, dtype = np.float32)
             for i in range(grid_hor.shape[0]):
                 for j in range(grid_hor.shape[1]):
                     k = i * grid_hor.shape[1] + j
                     if np.isnan(fr_intv[k]).all():
-                        h_new_all[i,j] = np.nan
+                        frag_result[i,j] = np.nan
                 
                     else:
-                        h_new_all[i,j] = fr_intv[k]
+                        frag_result[i,j] = fr_intv[k]
     
-    return z,h_new_all
+    return z,frag_result
 
 def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker):
     MAXFLOAT = float(np.finfo(np.float32).max) 
@@ -150,15 +150,15 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
         hdata2[loar2h] = hdata02[loar2]
         if np.nanmean(hdata2) <= np.nanmean(hdata1):
             hdata1, hdata2 = hdata2, hdata1
-        hdata3 = ((hdata2-hdata1) * const_step) + hdata1
+        hor_slice = ((hdata2-hdata1) * const_step) + hdata1
     else:
-        hdata3 = hdata1 + shift
+        hor_slice = hdata1 + shift
     
     z_step_ms = cube_in.time_step / 1000
     
     cube_time = np.arange(cube_in.data_start, cube_in.data_start  + z_step_ms * cube_in.n_samples, z_step_ms)
-    grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x, hdata3)
-    new_zr_all = np.full((hdata1.shape[0],hdata1.shape[1]), np.nan,dtype = np.float32)
+    grid_real, grid_local = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x, hor_slice) # на выходе реальные и локальные координаты фрагментов куба в зависимости от размера шага 
+    result = np.full((hdata1.shape[0],hdata1.shape[1]), np.nan,dtype = np.float32)
 
     global total_frag
     total_frag = len(grid_real)
@@ -166,8 +166,8 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
     with ProcessPoolExecutor(max_workers=num_worker) as executor:
         futures=[]
         for k in range(len(grid_real)):
-            grid_hor3 = hdata3[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor3,cube_time,grid_real,type_interpolation)
+            grid_hor = hor_slice[grid_local[k][0]:grid_local[k][0] + grid_local[k][1],grid_local[k][2]:grid_local[k][2] + grid_local[k][3]]
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor,cube_time,grid_real,type_interpolation)
             f.add_done_callback(move_progress)
             futures.append(f)
             #LOG.debug(f"Submitted: {k=}")
@@ -175,19 +175,19 @@ def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_betwee
         for f in as_completed(futures):
 
             try:
-                z,h_new_all = f.result()
+                z,frag_result = f.result()
                 
                 #LOG.debug(f"Returned {z=}")
-                new_zr_all[grid_not[z][0]:grid_not[z][0] + grid_not[z][1], grid_not[z][2]:grid_not[z][2] + grid_not[z][3]] = h_new_all
+                result[grid_local[z][0]:grid_local[z][0] + grid_local[z][1], grid_local[z][2]:grid_local[z][2] + grid_local[z][3]] = frag_result
             except Exception as e:
                 LOG.error(f"Exception: {e}")       
         
-    new_zr_all = new_zr_all.astype('float32')
-    np.nan_to_num(new_zr_all, nan=MAXFLOAT, copy=False)
-    if hdata3.dtype==np.float64:
-        hdata3 = hdata3.astype('float32')
-    np.nan_to_num(hdata3, nan=MAXFLOAT, copy=False)
-    return np.vstack([hdata3[None, :, :]] + [new_zr_all[None, :, :]])
+    result = result.astype('float32')
+    np.nan_to_num(result, nan=MAXFLOAT, copy=False)
+    if hor_slice.dtype==np.float64:
+        hor_slice = hor_slice.astype('float32')
+    np.nan_to_num(hor_slice, nan=MAXFLOAT, copy=False)
+    return np.vstack([hor_slice[None, :, :]] + [result[None, :, :]])
     
 class cubeHorizontsCalculation(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
