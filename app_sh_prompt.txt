@@ -1,0 +1,4 @@
+Write bash script that will:
+- start subprocess python main.py
+- intercept signals SIGINT and SIGQUIT and resend it to the python subprocess
+- kill the python subprocess and all its child processes after a set timeout with SIGKILL signal
