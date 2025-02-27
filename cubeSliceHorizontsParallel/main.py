@@ -57,9 +57,11 @@ def linear_interpolate_traces(y, c_time, ind, gr_hor):
         
     valid_gr_hor = ~np.isnan(gr_hor)
 
+    valid_y = np.isfinite(y)
+
     ind_int = np.round(ind)
 
-    valid_idx = (ind_int >= 0) & (ind_int < y.shape[2]) & valid_gr_hor
+    valid_idx = (ind_int >= 0) & (ind_int < y.shape[2]) & valid_gr_hor & valid_y.any(axis=2)
 
     valid_i, valid_j = np.where(valid_idx)
 
@@ -74,9 +76,11 @@ def cubic_interpolate_traces(y, c_time, ind, gr_hor):
         
     valid_gr_hor = ~np.isnan(gr_hor)
 
+    valid_y = np.isfinite(y)
+
     ind_int = np.round(ind)
 
-    valid_idx = (ind_int >= 0) & (ind_int < y.shape[2]) & valid_gr_hor
+    valid_idx = (ind_int >= 0) & (ind_int < y.shape[2]) & valid_gr_hor & valid_y.any(axis=2)
 
     valid_i, valid_j = np.where(valid_idx)
 
