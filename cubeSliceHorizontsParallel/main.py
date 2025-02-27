@@ -53,47 +53,37 @@ def find_fr(y, ind):
     return y_out
 
 def linear_interpolate_traces(y, c_time, ind, gr_hor):
-    y_out  = []               
-    for i in range(y.shape[0]):
-        for j in range(y.shape[1]):
-            if np.isnan(gr_hor[i,j]) or np.isnan(y[i,j,:]).all():
-                y_out.append([np.nan])
-                continue
-            else:
-                ind_1 = int(ind[i,j])
-                if np.isnan(y[i,j,ind_1]):
-                    y_out.append([np.nan])
-                    continue
-                else:
-                    good_idx = np.where( np.isfinite(y[i,j,:]) )
-                    x0 = gr_hor[i,j]
-                    try :
-                        y_out.append(np.interp(x0, c_time[good_idx], y[i,j,good_idx][0,:], left = np.nan, right = np.nan ))
-                    except:
-                        y_out.append([np.nan])
-                        continue
+    y_out = np.full(gr_hor.shape, np.nan)
+        
+    valid_gr_hor = ~np.isnan(gr_hor)
+
+    ind_int = np.round(ind)
+
+    valid_idx = (ind_int >= 0) & (ind_int < y.shape[2]) & valid_gr_hor
+
+    valid_i, valid_j = np.where(valid_idx)
+
+    interp_values = np.array([np.interp(gr_hor[i, j], c_time, y[i, j, :], left=np.nan, right=np.nan)for i, j in zip(valid_i, valid_j)])
+
+    y_out[valid_i, valid_j] = interp_values
+
     return y_out
 
 def cubic_interpolate_traces(y, c_time, ind, gr_hor):
-    y_out = []
-    for i in range(y.shape[0]):
-        for j in range(y.shape[1]):
-            if np.isnan(gr_hor[i,j]) or np.isnan(y[i,j,:]).all():
-                y_out.append([np.nan])
-                continue
-            else:
-                ind_1 = int(ind[i,j])
-                if np.isnan(y[i,j,ind_1]):
-                    y_out.append([np.nan])
-                    continue
-                else:
-                    good_idx = np.where( np.isfinite(y[i,j,:]) )
-                    x0 = gr_hor[i,j]
-                    try :
-                        y_out.append(CubicSpline(c_time[good_idx], y[i,j,good_idx][0,:], extrapolate=False )(x0))
-                    except:
-                        y_out.append([np.nan])
-                        continue
+    y_out = np.full(gr_hor.shape, np.nan)
+        
+    valid_gr_hor = ~np.isnan(gr_hor)
+
+    ind_int = np.round(ind)
+
+    valid_idx = (ind_int >= 0) & (ind_int < y.shape[2]) & valid_gr_hor
+
+    valid_i, valid_j = np.where(valid_idx)
+
+    interp_values = np.array([CubicSpline(c_time, y[i, j, :], extrapolate=False)(gr_hor[i, j]) for i, j in zip(valid_i, valid_j)]) 
+    
+    y_out[valid_i, valid_j] = interp_values
+
     return y_out
 
 def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
@@ -113,18 +103,9 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
         if type_interpolation == "no interpolation":
             frag_result = find_fr(fr, ind) # поиск значений в кубе
         if type_interpolation == "linear":
-            fr_intv = linear_interpolate_traces(fr, cube_time_new, ind, grid_hor)
+            frag_result = linear_interpolate_traces(fr, cube_time_new, ind, grid_hor)
         if type_interpolation == "cubic spline":
-            fr_intv = cubic_interpolate_traces(fr, cube_time_new, ind, grid_hor)
-        if type_interpolation != "no interpolation": #### Временно
-            for i in range(grid_hor.shape[0]):
-                for j in range(grid_hor.shape[1]):
-                    k = i * grid_hor.shape[1] + j
-                    if np.isnan(fr_intv[k]).all():
-                        frag_result[i,j] = np.nan
-                
-                    else:
-                        frag_result[i,j] = fr_intv[k]
+            frag_result = cubic_interpolate_traces(fr, cube_time_new, ind, grid_hor)
     
     return z,frag_result
 
