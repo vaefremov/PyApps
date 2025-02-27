@@ -20,8 +20,8 @@ import os
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
-incr_i = 100
-incr_x = 100
+#incr_i = 100
+#incr_x = 100
 completed_frag = 0
 total_frag = 0
 
@@ -113,7 +113,7 @@ def compute_fragment(z,cube_in,grid_hor,cube_time,grid_real,type_interpolation):
     
     return z,frag_result
 
-def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker):
+def compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker,incr_i,incr_x):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata01 = hor1.get_data()
     hdata01 = np.where((hdata01>= 0.1*MAXFLOAT) | (hdata01== np.inf), np.nan, hdata01)
@@ -191,13 +191,15 @@ if __name__ == "__main__":
     shift = job.description["shift"]
     distance_between = job.description["distance_between"]
     num_worker = job.description["num_worker"]
+    incr_i = job.description["chank_size"]
+    incr_x = job.description["chank_size"]
     cube_in = job.open_input_dataset()
     hor_name1 = job.description["Horizon"][0]
     hor_name2 = job.description["Horizon"][1] if len(job.description["Horizon"])>1 else None
     type_interpolation = job.description["interpolation"]
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2) if hor_name2 is not None else None
-    dt = compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker)
+    dt = compute_slice(cube_in, hor1,hor2, type_interpolation, shift, distance_between, num_worker,incr_i,incr_x)
     f_out = job.session.create_attribute_2d_writer_for_cube(cube_in, job.description["New Name"], attr_name)
     f_out.write_horizon_data(dt[0]) # Not needed if the horizon data have been copied by create_attr (copy_horizon_data=True)
     f_out.write_data(dt[1])
