@@ -221,3 +221,12 @@ class DISession:
         job = DiJob(job_id)
         job.server_url = self.server_url
         return job
+
+    def list_areas(self):
+        with requests.get(f"{self.server_url}/grids/areas/list/{self.project_id}/") as resp:
+            if resp.status_code != 200:
+                LOG.error("Cant' get list of cubes: %s", resp.status_code)
+                raise RuntimeError(f"Cant' get list of cubes: {resp.status_code=}")
+                return None
+            resp_j = json.loads(resp.content)
+            return resp_j
