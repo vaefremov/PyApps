@@ -18,6 +18,7 @@ import signal
 import functools
 import time
 import traceback
+from importlib.metadata import distributions
 
 from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
@@ -235,6 +236,10 @@ class DiApp(metaclass=abc.ABCMeta):
     def report(self):
         """Reports current job's parameters"""
         LOG.info(f"Job parameters: {self.description}")
+        LOG.info(f"Platform: {sys.platform} Version: {sys.version}")
+        installed_packages = {dist.metadata["Name"]: dist.version for dist in distributions()}
+        freeze = [f"{p}=={v}" for p,v in installed_packages.items()]
+        LOG.info(f"Installed packages: {freeze}")
 
 class DiAppSeismic3D(DiApp):
 
