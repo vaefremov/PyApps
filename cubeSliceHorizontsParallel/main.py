@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 #incr_x = 100
 completed_frag = 0
 total_frag = 0
-LOG_INTERVAL = 15
+LOG_INTERVAL = 2 #2 seconds
 last_log_time = time.time() 
 
 def move_progress(f: Future):
