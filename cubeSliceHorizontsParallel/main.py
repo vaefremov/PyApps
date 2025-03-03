@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 #incr_x = 100
 completed_frag = 0
 total_frag = 0
-LOG_INTERVAL = 10
+LOG_INTERVAL = 15
 last_log_time = time.time() 
 
 def move_progress(f: Future):
@@ -75,8 +75,8 @@ def linear_interpolate_traces(y, c_time, ind, gr_hor):
     y_out[valid_i, valid_j] = interp_values
 
     return y_out
-@jit
-def cubic_interpolate_traces_fast_numba(y, c_time, ind, gr_hor):
+#@jit
+def cubic_interpolate_traces(y, c_time, ind, gr_hor):
     y_out = np.full(gr_hor.shape, np.nan)
         
     valid_gr_hor = ~np.isnan(gr_hor)
@@ -89,14 +89,9 @@ def cubic_interpolate_traces_fast_numba(y, c_time, ind, gr_hor):
 
     valid_i, valid_j = np.where(valid_idx)
 
-    return valid_i, valid_j, y_out
-
-def cubic_interpolate_traces(y, c_time, ind1, gr_hor1):
-    valid_i, valid_j, y_out = cubic_interpolate_traces_fast_numba(y, c_time, ind1, gr_hor1)
-
-    for i, j in zip(valid_i, valid_j):
-        cs = CubicSpline(c_time, y[i, j, :], extrapolate=False)
-        y_out[i, j] = cs(gr_hor1[i, j])
+    interp_values = np.array([CubicSpline(c_time, y[i, j, :], extrapolate=False)(gr_hor[i, j]) for i, j in zip(valid_i, valid_j)]) 
+    
+    y_out[valid_i, valid_j] = interp_values
 
     return y_out
 
