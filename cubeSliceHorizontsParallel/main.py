@@ -89,9 +89,13 @@ def cubic_interpolate_traces(y, c_time, ind, gr_hor):
 
     valid_i, valid_j = np.where(valid_idx)
 
-    interp_values = np.array([CubicSpline(c_time, y[i, j, :], extrapolate=False)(gr_hor[i, j]) for i, j in zip(valid_i, valid_j)]) 
-    
-    y_out[valid_i, valid_j] = interp_values
+    if valid_i.size > 0:
+        y_valid = y[valid_i, valid_j, :]
+        
+        splines = [CubicSpline(c_time, y_valid[k], extrapolate=False) for k in range(len(valid_i))]
+        interp_values = np.array([spl(gr_hor[i, j]) for spl, i, j in zip(splines, valid_i, valid_j)])
+        
+        y_out[valid_i, valid_j] = interp_values
 
     return y_out
 

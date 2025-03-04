@@ -29,13 +29,18 @@ zero_samples = 1000
 
 completed_frag = 0
 total_frag = 0
+LOG_INTERVAL = 2 #2 seconds
+last_log_time = time.time() 
 
 def move_progress(f: Future):
-    global completed_frag
+    global completed_frag, last_log_time
     if f.exception() is None:
         completed_frag += 1
-        LOG.debug(f"Completion: {completed_frag*100 // total_frag}")
-        job.log_progress("calculation", completed_frag*100 // total_frag)   
+        t = time.time()
+        if t - last_log_time >= LOG_INTERVAL:
+            LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+            job.log_progress("calculation", completed_frag*100 // total_frag)  
+            last_log_time = t  
 
 def taper_fragment(fr):
     global border_correction
