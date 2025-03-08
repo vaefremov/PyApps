@@ -145,15 +145,16 @@ class TestDIArea(unittest.TestCase):
     @patch('requests.post')
     def test_update(self, mock_post):
         """Test the _update method"""
-        # Set up mock response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = json.dumps({
+        # Create a mock for the context manager
+        mock_context = MagicMock()
+        mock_context.status_code = 200
+        mock_context.content = json.dumps({
             "id": 456,
             "ts": "2025-03-05T12:00:00Z"
         }).encode("utf8")
         
-        mock_post.return_value = mock_response
+        # Configure mock_post to return the context manager mock
+        mock_post.return_value.__enter__.return_value = mock_context
         
         # Set up area info
         self.area._area_info = AreaInfo(
@@ -176,13 +177,13 @@ class TestDIArea(unittest.TestCase):
         self.assertEqual(headers["Content-Type"], "application/json")
         self.assertEqual(headers["x-di-authorization"], "test-token")
         
-        # Check request body
-        expected_body = {
+        # Check request body - taking into account JSON serialization of tuples as lists
+        expected_body_dict = {
             "name": "test_area",
-            "area": self.polygon_data
+            "area": [[point[0], point[1]] for point in self.polygon_data]  # Convert tuples to lists
         }
         actual_body = json.loads(mock_post.call_args[1]["data"].decode("utf8"))
-        self.assertEqual(actual_body, expected_body)
+        self.assertEqual(actual_body, expected_body_dict)
         
         # Check that area_info was updated
         self.assertEqual(self.area._area_info.id, 456)
@@ -191,11 +192,13 @@ class TestDIArea(unittest.TestCase):
     @patch('requests.post')
     def test_update_failure(self, mock_post):
         """Test _update when the API request fails"""
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.content = b"Server error"
+        # Create a mock for the context manager
+        mock_context = MagicMock()
+        mock_context.status_code = 500
+        mock_context.content = b"Server error"
         
-        mock_post.return_value = mock_response
+        # Configure mock_post to return the context manager mock
+        mock_post.return_value.__enter__.return_value = mock_context
         
         self.area._area_info = AreaInfo(
             name="test_area",
@@ -212,15 +215,16 @@ class TestDIArea(unittest.TestCase):
     @patch('requests.post')
     def test_create(self, mock_post):
         """Test the _create method"""
-        # Set up mock response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = json.dumps({
+        # Create a mock for the context manager
+        mock_context = MagicMock()
+        mock_context.status_code = 200
+        mock_context.content = json.dumps({
             "id": 456,
             "ts": "2025-03-05T12:00:00Z"
         }).encode("utf8")
         
-        mock_post.return_value = mock_response
+        # Configure mock_post to return the context manager mock
+        mock_post.return_value.__enter__.return_value = mock_context
         
         # Set up area info
         self.area._area_info = AreaInfo(
@@ -243,17 +247,40 @@ class TestDIArea(unittest.TestCase):
         self.assertEqual(headers["Content-Type"], "application/json")
         self.assertEqual(headers["x-di-authorization"], "test-token")
         
-        # Check request body
-        expected_body = {
+        # Check request body - taking into account JSON serialization of tuples as lists
+        expected_body_dict = {
             "name": "test_area",
-            "area": self.polygon_data
+            "area": [[point[0], point[1]] for point in self.polygon_data]  # Convert tuples to lists
         }
         actual_body = json.loads(mock_post.call_args[1]["data"].decode("utf8"))
-        self.assertEqual(actual_body, expected_body)
+        self.assertEqual(actual_body, expected_body_dict)
         
         # Check that area_info was updated
         self.assertEqual(self.area._area_info.id, 456)
         self.assertEqual(self.area._area_info.ts, "2025-03-05T12:00:00Z")
+    
+    @patch('requests.post')
+    def test_create_failure(self, mock_post):
+        """Test _create when the API request fails"""
+        # Create a mock for the context manager
+        mock_context = MagicMock()
+        mock_context.status_code = 500
+        mock_context.content = b"Server error"
+        
+        # Configure mock_post to return the context manager mock
+        mock_post.return_value.__enter__.return_value = mock_context
+        
+        self.area._area_info = AreaInfo(
+            name="test_area",
+            area=self.polygon_data,
+            ts="",
+            owner=None
+        )
+        
+        with self.assertRaises(RuntimeError) as context:
+            self.area._create()
+        
+        self.assertIn("Failed to update area", str(context.exception))
 
 class TestNewArea(unittest.TestCase):
     @patch('di_lib.area.DIArea._create')
