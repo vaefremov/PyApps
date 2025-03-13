@@ -183,7 +183,7 @@ class DiApp(metaclass=abc.ABCMeta):
         LOG.debug(f"Completion: {self.completed_frags*100 // self.total_frags}")
         completed = False
         n_iter = 0
-        while not completed and n_iter < 10:
+        while not completed and n_iter < 10: # TODO: should eliminate magic constant!
             try:
                 self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
                 completed = True
@@ -193,7 +193,7 @@ class DiApp(metaclass=abc.ABCMeta):
             except Exception as ex:
                 LOG.error(f"Failed to set progress for job, cause {ex}")
             n_iter += 1
-            
+
     @abc.abstractmethod
     def generate_process_arguments(self) -> Dict[int, Union[ProcessCParams, ProcessLParams]]:
         return {}
