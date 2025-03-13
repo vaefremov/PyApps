@@ -18,6 +18,7 @@ import signal
 import functools
 import time
 import traceback
+from importlib.metadata import distributions
 
 from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
@@ -180,7 +181,18 @@ class DiApp(metaclass=abc.ABCMeta):
     def completion_callback(self, iterable):
         self.completed_frags += 1
         LOG.debug(f"Completion: {self.completed_frags*100 // self.total_frags}")
-        self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
+        completed = False
+        n_iter = 0
+        while not completed and n_iter < 10: # TODO: should eliminate magic constant!
+            try:
+                self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
+                completed = True
+            except RuntimeError as ex:
+                LOG.error(f"Failed to set progress for job, cause {ex}")
+                raise ex
+            except Exception as ex:
+                LOG.error(f"Failed to set progress for job, cause {ex}")
+            n_iter += 1
 
     @abc.abstractmethod
     def generate_process_arguments(self) -> Dict[int, Union[ProcessCParams, ProcessLParams]]:
@@ -235,6 +247,10 @@ class DiApp(metaclass=abc.ABCMeta):
     def report(self):
         """Reports current job's parameters"""
         LOG.info(f"Job parameters: {self.description}")
+        LOG.info(f"Platform: {sys.platform} Version: {sys.version}")
+        installed_packages = {dist.metadata["Name"]: dist.version for dist in distributions()}
+        freeze = [f"{p}=={v}" for p,v in installed_packages.items()]
+        LOG.info(f"Installed packages: {freeze}")
 
 class DiAppSeismic3D(DiApp):
 

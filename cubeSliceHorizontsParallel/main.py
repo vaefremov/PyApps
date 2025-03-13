@@ -1,9 +1,8 @@
 from typing import Optional, Tuple
 import logging
 import numpy as np
-from scipy.interpolate import interp1d
-from scipy.fft import rfft, rfftfreq
-from scipy.interpolate import CubicSpline,interp1d,Akima1DInterpolator
+
+from scipy.interpolate import CubicSpline
 
 from di_lib import di_app
 from di_lib.di_app import Context
@@ -13,6 +12,7 @@ from di_lib.attribute import DIHorizon3D, DIAttribute2D
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 from typing import List
+from numba import jit
 
 import time
 import os
@@ -24,13 +24,18 @@ LOG = logging.getLogger(__name__)
 #incr_x = 100
 completed_frag = 0
 total_frag = 0
+LOG_INTERVAL = 2 #2 seconds
+last_log_time = time.time() 
 
 def move_progress(f: Future):
-    global completed_frag
+    global completed_frag, last_log_time
     if f.exception() is None:
         completed_frag += 1
-        #LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-        #job.log_progress("calculation", completed_frag*100 // total_frag)  
+        t = time.time()
+        if t - last_log_time >= LOG_INTERVAL:
+            LOG.info(f"Completion: {completed_frag*100 // total_frag}")
+            job.log_progress("calculation", completed_frag*100 // total_frag)  
+            last_log_time = t
 
 def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     inc_i = incr_i
@@ -70,7 +75,7 @@ def linear_interpolate_traces(y, c_time, ind, gr_hor):
     y_out[valid_i, valid_j] = interp_values
 
     return y_out
-
+#@jit
 def cubic_interpolate_traces(y, c_time, ind, gr_hor):
     y_out = np.full(gr_hor.shape, np.nan)
         
@@ -84,9 +89,13 @@ def cubic_interpolate_traces(y, c_time, ind, gr_hor):
 
     valid_i, valid_j = np.where(valid_idx)
 
-    interp_values = np.array([CubicSpline(c_time, y[i, j, :], extrapolate=False)(gr_hor[i, j]) for i, j in zip(valid_i, valid_j)]) 
-    
-    y_out[valid_i, valid_j] = interp_values
+    if valid_i.size > 0:
+        y_valid = y[valid_i, valid_j, :]
+        
+        splines = [CubicSpline(c_time, y_valid[k], extrapolate=False) for k in range(len(valid_i))]
+        interp_values = np.array([spl(gr_hor[i, j]) for spl, i, j in zip(splines, valid_i, valid_j)])
+        
+        y_out[valid_i, valid_j] = interp_values
 
     return y_out
 
