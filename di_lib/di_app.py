@@ -181,8 +181,19 @@ class DiApp(metaclass=abc.ABCMeta):
     def completion_callback(self, iterable):
         self.completed_frags += 1
         LOG.debug(f"Completion: {self.completed_frags*100 // self.total_frags}")
-        self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
-
+        completed = False
+        n_iter = 0
+        while not completed and n_iter < 10:
+            try:
+                self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
+                completed = True
+            except RuntimeError as ex:
+                LOG.error(f"Failed to set progress for job, cause {ex}")
+                raise ex
+            except Exception as ex:
+                LOG.error(f"Failed to set progress for job, cause {ex}")
+            n_iter += 1
+            
     @abc.abstractmethod
     def generate_process_arguments(self) -> Dict[int, Union[ProcessCParams, ProcessLParams]]:
         return {}
