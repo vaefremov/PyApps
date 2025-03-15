@@ -176,7 +176,7 @@ class DiApp(metaclass=abc.ABCMeta):
                 ) as resp:
             if resp.status_code != 200:
                 LOG.error("Failed to set progress for job, response code %s", resp.status_code)
-                raise RuntimeError(f"Failed to set progress for job, response code {resp.status_code}")
+                raise RuntimeError(f"Failed to set progress for job {self.job_id}, response code {resp.status_code}")
 
     def completion_callback(self, iterable):
         self.completed_frags += 1
