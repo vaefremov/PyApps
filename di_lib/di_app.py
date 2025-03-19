@@ -272,7 +272,8 @@ class DiAppSeismic3D(DiApp):
         res = []
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
-            name2 = self.__class__.__name__ + f" ({result_name})"
+            # name2 = self.__class__.__name__ + f" ({result_name})"
+            name2 = f"{result_name}"
             c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
         return res
@@ -374,7 +375,8 @@ class DiAppSeismic3DMultiple(DiApp):
         res = []
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
-            name2 = self.__class__.__name__ + f" ({result_name})"
+            # name2 = self.__class__.__name__ + f" ({result_name})"
+            name2 = f"{result_name}"
             c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
         return res
@@ -473,7 +475,8 @@ class DiAppSeismic3D2D(DiApp):
         res = []
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
-            name2 = self.__class__.__name__ + f" ({result_name})"
+            # name2 = self.__class__.__name__ + f" ({result_name})"
+            name2 = f"{result_name}"
             c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
         return res
@@ -492,7 +495,8 @@ class DiAppSeismic3D2D(DiApp):
             res1 = []
             for result_name in self.out_names:
                 name = self.description[self.out_name_par] + f" ({p_in.name})"
-                name2 = self.__class__.__name__ + f" ({result_name})"
+                # name2 = self.__class__.__name__ + f" ({result_name})"
+                name2 = f"{result_name}"
                 p_out = self.session.create_line_writer_as_other(p_in, name, name2, **self.out_data_params)
                 res1.append(p_out)
             res.append(res1)
