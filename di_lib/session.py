@@ -56,12 +56,13 @@ class DISession:
         new_info["z_start"] = kw.get("z_start", original_info["z_start"])
         new_info["domain"] = kw.get("domain", original_info["domain"])
         new_nz = kw.get("nz", None)
+        job_id = kw.get("job_id", None)
         if new_nz is None:
             # Recalculate nz according to new z_step
             new_nz = round(original_info["nz"] * (original_info["z_step"]  / new_info["z_step"] ))
         new_info["nz"] = new_nz
         cube_writer._init_from_info(new_info)
-        cube_writer._create()
+        cube_writer._create(job_id)
         return cube_writer
 
     def delete_cube_by_id(self, cube_id: int):

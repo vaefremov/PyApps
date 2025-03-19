@@ -105,7 +105,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self.total_frags = 0
         self.completed_frags = 0
         self._margin = None
-        self.out_data_params = {}
+        self.out_data_params = {"job_id": self.job_id}
         self.loop_no = 0
 
     @property
