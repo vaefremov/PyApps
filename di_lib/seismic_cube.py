@@ -293,7 +293,7 @@ class DISeismicCubeWriter(DISeismicCube):
         self.min_i = i["min_inline"]
         self.min_x = i["min_xline"]
 
-    def _create(self):
+    def _create(self, job_id: Optional[int] = None):
         # url = f"{self.server_url}/seismic_3d/create/{self.project_id}/"
         url = f"{self.server_url}/seismic_3d/geometry/new_cube/{self.geometry_id}/"
         res_status = 200
@@ -306,7 +306,7 @@ class DISeismicCubeWriter(DISeismicCube):
             LOG.info(f"{cube_out=}")
             body = json.dumps(cube_out).encode("utf8")
             with requests.post(
-                    url, data=body, headers={"Content-Type": "application/json", "x-di-authorization": self.token}
+                    url, data=body, params={"job_id": job_id}, headers={"Content-Type": "application/json", "x-di-authorization": self.token}
                 ) as resp:
                 if resp.status_code != 200:
                     LOG.error("Failed to create cube, response code %s", resp.status_code)

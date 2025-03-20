@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedtuple, Counter
 from token import OP
 from typing import Any, List, Optional, Tuple, Dict, Union, cast
 import argparse
@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
 
 LOG = logging.getLogger(__name__)
-MAX_TRIES = 3
+MAX_TRIES = 10
 
 class JobDescription(namedtuple("JobDescription", ["job_id", "project_id", "token", "server_url"])):
     __slots__ = ()
@@ -105,7 +105,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self.total_frags = 0
         self.completed_frags = 0
         self._margin = None
-        self.out_data_params = {}
+        self.out_data_params = {"job_id": self.job_id}
         self.loop_no = 0
 
     @property
@@ -240,9 +240,11 @@ class DiApp(metaclass=abc.ABCMeta):
 
         t_end = time.perf_counter()
         if run_args:
-            LOG.error(f"Still not computed after {MAX_TRIES} tries: {run_args}")
+            LOG.debug(f"Still not computed after {MAX_TRIES} tries: {run_args}")
+            LOG.error(f"Still not computed after {MAX_TRIES} tries: {len(run_args)}")
         LOG.info(f"Finished in {t_end-t_start} sec")
-        return res_final
+        report = self.make_result_report(res_final)
+        return report
 
     def report(self):
         """Reports current job's parameters"""
@@ -251,7 +253,14 @@ class DiApp(metaclass=abc.ABCMeta):
         installed_packages = {dist.metadata["Name"]: dist.version for dist in distributions()}
         freeze = [f"{p}=={v}" for p,v in installed_packages.items()]
         LOG.info(f"Installed packages: {freeze}")
-
+    
+    def make_result_report(self, result: List[Tuple[int, Any]]) -> str:
+        """Reports result of the job"""
+        LOG.debug(f"Job result: {result}")
+        summary = Counter([r[1] for r in result])
+        LOG.debug(f"Job result: {summary}")
+        return f"{summary}"
+    
 class DiAppSeismic3D(DiApp):
 
     def __init__(self, in_name_par: str, out_name_par: str, out_names: List[str]) -> None:
@@ -272,7 +281,8 @@ class DiAppSeismic3D(DiApp):
         res = []
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
-            name2 = self.__class__.__name__ + f" ({result_name})"
+            # name2 = self.__class__.__name__ + f" ({result_name})"
+            name2 = f"{result_name}"
             c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
         return res
@@ -374,7 +384,8 @@ class DiAppSeismic3DMultiple(DiApp):
         res = []
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
-            name2 = self.__class__.__name__ + f" ({result_name})"
+            # name2 = self.__class__.__name__ + f" ({result_name})"
+            name2 = f"{result_name}"
             c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
         return res
@@ -473,7 +484,8 @@ class DiAppSeismic3D2D(DiApp):
         res = []
         for result_name in self.out_names:
             name = self.description[self.out_name_par]
-            name2 = self.__class__.__name__ + f" ({result_name})"
+            # name2 = self.__class__.__name__ + f" ({result_name})"
+            name2 = f"{result_name}"
             c_out = self.session.create_cube_writer_as_other(cube_in, name, name2, **self.out_data_params)
             res.append(c_out)
         return res
@@ -492,7 +504,8 @@ class DiAppSeismic3D2D(DiApp):
             res1 = []
             for result_name in self.out_names:
                 name = self.description[self.out_name_par] + f" ({p_in.name})"
-                name2 = self.__class__.__name__ + f" ({result_name})"
+                # name2 = self.__class__.__name__ + f" ({result_name})"
+                name2 = f"{result_name}"
                 p_out = self.session.create_line_writer_as_other(p_in, name, name2, **self.out_data_params)
                 res1.append(p_out)
             res.append(res1)

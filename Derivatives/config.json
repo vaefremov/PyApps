@@ -1,0 +1,62 @@
+ {
+    "config": {
+      "application": "Derivatives",
+      "application_ru_RU": "Вычисление производных",
+      "category": [
+        "Applications"
+      ],
+      "parameters_template": [
+        { "name": "result_name",
+          "title": "Result name",
+          "title_ru_RU": "Имя результата",
+          "type": "LineEdit",
+          "default": "derivative" },
+        {
+          "name": "seismic_2d",
+          "type": "ListView",
+          "inputDataType": "SeismicData2DGeoms",
+          "title": "Select input 2D",
+          "title_ru_RU": "Выберите профили 2Д"
+        },
+        {
+          "name": "seismic_3d",
+          "type": "ListView",
+          "inputDataType": "SeismicDataGeoms3DCubes",
+          "title": "Select input 3D",
+          "title_ru_RU": "Выберите кубы 3Д"
+        },
+        {
+          "name": "Laplacian2d",
+          "title": "Sum of second derivatives",
+          "title_ru_RU": "Сумма вторых производных",
+          "type": "CheckBox",
+          "checked": true
+        },
+        {
+          "name": "first_derivative_Z",
+          "title": "First derivative with respect to depth",
+          "title_ru_RU": "Первая производная по глубине",
+          "type": "CheckBox",
+          "checked": true
+        },      
+        {
+          "name": "border_correction",
+          "type": "SpinBox",
+          "title": "Border correction (samples)",
+          "default": 20,
+          "min": 0,
+          "max": 100
+        },
+        { 
+          "name": "Threads Count", 
+          "type": "SpinBox", 
+          "min": 1, 
+          "max": 100, 
+          "default": 16},
+        {"name": "margin",
+         "type": "CustomInt",
+         "default": 2}
+      ]
+    },
+    "name": "Derivatives"
+  }
