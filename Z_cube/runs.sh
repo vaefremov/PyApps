@@ -1,0 +1,1 @@
+./JobApps/cubeHorizontsCalculation/app.sh  --job 19885047 --project 19637517 --token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwidXNlcl9uYW1lIjoia2F6YW4ifQ.CeFkjtwL0JraAaLjRSHzLwKYRSV95oi2sH_Wrz5VUFI -u http://localhost --port 9990
