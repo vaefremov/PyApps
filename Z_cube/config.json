@@ -1,7 +1,7 @@
 {
   "config": {
-    "application": "Slice from Horizon",
-    "application_ru_RU": "Срез по Горизонту",
+    "application": "Zcube",
+    "application_ru_RU": "Zcube",
     "category": [ "Applications" ],
     "parameters_template": [
         { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "ListView" },

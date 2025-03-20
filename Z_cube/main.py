@@ -199,7 +199,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker,mode,top_shift,top_bottom):
             except Exception as e:
                 LOG.error(f"Exception: {e}")
     
-class statistic_horizont(di_app.DiAppSeismic3D):
+class Zcube(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
         super().__init__(in_name_par="Input Seismic3D Names", 
                 out_name_par="New Name", out_names=[])
@@ -210,7 +210,7 @@ class statistic_horizont(di_app.DiAppSeismic3D):
 if __name__ == "__main__":
     LOG.debug(f"Starting job ExampleHor1")
     tm_start = time.time()
-    job = statistic_horizont()
+    job = Zcube()
     cube_in = job.open_input_dataset()
     num_worker = job.description["num_worker"]
     top_shift = job.description["top_shift"]
