@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
 
 LOG = logging.getLogger(__name__)
-MAX_TRIES = 3
+MAX_TRIES = 10
 
 class JobDescription(namedtuple("JobDescription", ["job_id", "project_id", "token", "server_url"])):
     __slots__ = ()
