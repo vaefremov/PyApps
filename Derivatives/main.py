@@ -57,12 +57,13 @@ class Derivative(di_app.DiAppSeismic3D):
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         f_in = f_in_tup[0]
-        tmp_f = taper_fragment(f_in, self.border_correction)
+        f_in = np.where((f_in>= 0.1*MAXFLOAT) | (f_in== np.inf), np.nan, f_in)
+        #tmp_f = taper_fragment(f_in, self.border_correction)
         if self.cube_in is not None:
             time_step_sec = self.cube_in.time_step/1e6
         else:
             time_step_sec = None
-        f_out = compute_derivatives(tmp_f, time_step_sec, *self.out_flags)
+        f_out = compute_derivatives(f_in , time_step_sec, *self.out_flags)
         return tuple(i for i in f_out if i is not None)
 
 if __name__ == "__main__":
