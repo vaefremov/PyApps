@@ -25,11 +25,13 @@ def taper_fragment(fr, border_correction: int):
 
 def compute_derivatives(fr, dt, laplacian2d, derivative_Z):
     h_laplacian2d, h_derivative_Z = None, None
-    if laplacian2d:    
+    if laplacian2d:  
+        h_laplacian2d = np.full((fr.shape), np.nan, dtype = np.float32) 
         if fr is not None and len(fr.shape) == 3:
-            h_laplacian2d  = np.diff(fr, n=2, axis=0)[:,1:-1,:] + np.diff(fr, n=2, axis=1)[1:-1,:,:]
+            h_laplacian2d[1:-1,1:-1,:]  = np.diff(fr, n=2, axis=0)[:,1:-1,:] + np.diff(fr, n=2, axis=1)[1:-1,:,:]
         elif fr is not None and len(fr.shape) == 2:
-            h_laplacian2d  = np.diff(fr, n=2, axis=0)[:,1:-1,:] 
+            h_laplacian2d[1:-1,:]  = np.diff(fr, n=2, axis=0)[:,1:-1,:] 
+        h_laplacian2d = h_laplacian2d.astype('float32')
         np.nan_to_num(h_laplacian2d, nan=MAXFLOAT, copy=False)
     if derivative_Z:
         h_derivative_Z = np.full((fr.shape), np.nan, dtype = np.float32)
@@ -37,6 +39,7 @@ def compute_derivatives(fr, dt, laplacian2d, derivative_Z):
             h_derivative_Z[:,:,1:] = np.diff(fr, n=1, axis=-1) / dt
         elif fr is not None and len(fr.shape) == 2:
             h_derivative_Z[:,1:] = np.diff(fr, n=1, axis=-1) / dt
+        h_derivative_Z = h_derivative_Z.astype('float32')
         np.nan_to_num(h_derivative_Z, nan=MAXFLOAT, copy=False)
     return h_laplacian2d  if laplacian2d else None, h_derivative_Z if derivative_Z else None
 class Derivative(di_app.DiAppSeismic3D):
