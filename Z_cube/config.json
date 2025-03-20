@@ -9,10 +9,10 @@
         { "name": "New Name", "type": "LineEdit", "default": "Result" },
         {
           "name": "mode",
-          "type": "RadioButton",
+          "type": "ComboBox",
           "title": "Mode",
           "default": "proportional",
-          "items": ["proportional","From Top","From Bottom"]
+          "items": ["proportional","From_Top","From_Bottom"]
         },
     {
           "name": "top_shift",
