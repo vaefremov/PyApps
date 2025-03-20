@@ -7,7 +7,7 @@ from scipy.interpolate import CubicSpline,interp1d,Akima1DInterpolator
 
 from di_lib import di_app
 from di_lib.di_app import Context
-from di_lib.seismic_cube import DISeismicCube
+from di_lib.seismic_cube import DISeismicCube,DISeismicCubeWriter
 from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
 import multiprocessing
@@ -137,7 +137,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
         
     return z,h_new_all
 
-def compute_slice(cube_in, hor1, hor2,num_worker,mode,top_shift,top_bottom):
+def compute_slice(cube_in, cube_out, hor1, hor2,num_worker,mode,top_shift,top_bottom):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata01 = hor1.get_data()
     hdata01 = np.where((hdata01>= 0.1*MAXFLOAT) | (hdata01== np.inf), np.nan, hdata01)
@@ -195,7 +195,7 @@ def compute_slice(cube_in, hor1, hor2,num_worker,mode,top_shift,top_bottom):
                 
                 h_new_all = h_new_all.astype('float32')
                 np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-                cube_in.write_fragment(grid_not[z][0], grid_not[z][2], h_new_all)
+                cube_out.write_fragment(grid_not[z][0], grid_not[z][2], h_new_all)
             except Exception as e:
                 LOG.error(f"Exception: {e}")
     
@@ -224,8 +224,8 @@ if __name__ == "__main__":
     mode = job.description["mode"]
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
+    cube_out = DISeismicCubeWriter(cube_in)
     
-    compute_slice(cube_in, hor1, hor2,num_worker,mode,top_shift,top_bottom)
+    compute_slice(cube_in, cube_out, hor1, hor2,num_worker,mode,top_shift,top_bottom)
 
-    cube_in.save_statistics_for_horizons(hor_name1, hor_name2)
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
