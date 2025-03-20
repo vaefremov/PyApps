@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedtuple, Counter
 from token import OP
 from typing import Any, List, Optional, Tuple, Dict, Union, cast
 import argparse
@@ -240,9 +240,11 @@ class DiApp(metaclass=abc.ABCMeta):
 
         t_end = time.perf_counter()
         if run_args:
-            LOG.error(f"Still not computed after {MAX_TRIES} tries: {run_args}")
+            LOG.debug(f"Still not computed after {MAX_TRIES} tries: {run_args}")
+            LOG.error(f"Still not computed after {MAX_TRIES} tries: {len(run_args)}")
         LOG.info(f"Finished in {t_end-t_start} sec")
-        return res_final
+        report = self.make_result_report(res_final)
+        return report
 
     def report(self):
         """Reports current job's parameters"""
@@ -251,7 +253,14 @@ class DiApp(metaclass=abc.ABCMeta):
         installed_packages = {dist.metadata["Name"]: dist.version for dist in distributions()}
         freeze = [f"{p}=={v}" for p,v in installed_packages.items()]
         LOG.info(f"Installed packages: {freeze}")
-
+    
+    def make_result_report(self, result: List[Tuple[int, Any]]) -> str:
+        """Reports result of the job"""
+        LOG.debug(f"Job result: {result}")
+        summary = Counter([r[1] for r in result])
+        LOG.debug(f"Job result: {summary}")
+        return f"{summary}"
+    
 class DiAppSeismic3D(DiApp):
 
     def __init__(self, in_name_par: str, out_name_par: str, out_names: List[str]) -> None:
