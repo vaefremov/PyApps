@@ -104,6 +104,7 @@ class DiApp(metaclass=abc.ABCMeta):
         self._n_processes = 0
         self.total_frags = 0
         self.completed_frags = 0
+        self.last_reported_progress_percent = -1
         self._margin = None
         self.out_data_params = {"job_id": self.job_id}
         self.loop_no = 0
@@ -180,13 +181,17 @@ class DiApp(metaclass=abc.ABCMeta):
 
     def completion_callback(self, iterable):
         self.completed_frags += 1
-        LOG.debug(f"Completion: {self.completed_frags*100 // self.total_frags}")
+        progress_percent = self.completed_frags*100 // self.total_frags
+        LOG.debug(f"Completion: {progress_percent}")
+        if progress_percent == self.last_reported_progress_percent:
+            return
         completed = False
         n_iter = 0
         while not completed and n_iter < 10: # TODO: should eliminate magic constant!
             try:
-                self.log_progress("calculation", self.completed_frags*100 // self.total_frags)
+                self.log_progress("calculation", progress_percent)
                 completed = True
+                self.last_reported_progress_percent = progress_percent
             except RuntimeError as ex:
                 LOG.error(f"Failed to set progress for job, cause {ex}")
                 raise ex
