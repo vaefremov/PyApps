@@ -1,0 +1,13 @@
+{
+    "program_name": "ExampleHor1",
+    "project_id": 19637517,
+    "job_description": {
+      "Horizon": "BB_new",
+      "Input Seismic3D Names": [
+        "cube_geom\nCoherenceNew\nCoherence (Coherence)",
+        "cube_geom\ncube\nImported",
+        "cube_geom\ncube\nSeismic_section"
+      ],
+      "New Name": "Result"
+    }
+  }
