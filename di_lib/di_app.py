@@ -303,9 +303,13 @@ class DiAppSeismic3D(DiApp):
             if w_out:
                 w_out.write_fragment(f_coords[0], f_coords[2], f_out)
 
-        tmp_f: np.ndarray = params.c_in.get_fragment(*params.frag)
+
+        frag_i = Frag(*params.frag)
+        frag_e = enlarge_fragment(Frag(*params.frag), self.margin)
+        LOG.debug(f"Start processing {task_id} {frag_e=} {params.frag=}")
+        tmp_f: Optional[np.ndarray] = params.c_in.get_fragment(*frag_e)
         if tmp_f is None:
-            LOG.debug(f"Skipped: {task_id} {params.frag}")
+            LOG.debug(f"Skipped: {task_id} {frag_e=} {params.frag=}")
             return task_id, "SKIP"
         out_cube_params = params.c_out[0]._get_info() if len(params.c_out) else None
         context = Context(in_cube_params=params.c_in._get_info(), in_line_params=None, out_cube_params=out_cube_params, out_line_params=None)
@@ -314,8 +318,9 @@ class DiAppSeismic3D(DiApp):
         if DiApp.wrong_output_formats((tmp_f,), f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coincide with input")
         for w,f in zip(params.c_out, f_out):
-            output_frag_if_not_none(w, f, params.frag)
-        LOG.debug(f"Processed {task_id} {params.frag}")
+            ar_out = f[frag_i.no_i-frag_e.no_i:frag_e.span_i-self.margin, frag_i.no_x-frag_e.no_x:frag_e.span_x-self.margin,:]
+            output_frag_if_not_none(w, ar_out, params.frag)
+        LOG.debug(f"Processed {task_id} {frag_e=} {params.frag=}")
         return task_id, "OK"
 
     def generate_process_arguments(self) -> Dict[int, ProcessCParams]:
