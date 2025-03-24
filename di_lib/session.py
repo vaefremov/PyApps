@@ -99,7 +99,6 @@ class DISession:
         new_info["z_step"] = z_step
         new_info["z_start"] = z_start
         new_info["domain"] = kw.get("domain", "T")
-        new_nz = nz
         new_info["d_inline"] = geometry.info.v_i
         new_info["d_xline"] = geometry.info.v_x
         new_info["min_inline"] = kw.get("min_inline", 1)
@@ -107,9 +106,9 @@ class DISession:
         new_info["max_inline"] = max_inline
         new_info["max_xline"] = max_xline
         job_id = kw.get("job_id", None)
-        if new_info["max_inline"] is None or new_info["max_xline"] is None or new_nz is None:
+        if new_info["max_inline"] is None or new_info["max_xline"] is None or nz is None:
             raise ValueError("max_inline, max_xline and nz must be specified")
-        new_info["nz"] = new_nz
+        new_info["nz"] = nz
         cube_writer._init_from_info(new_info)
         cube_writer._create(job_id)
         return cube_writer
