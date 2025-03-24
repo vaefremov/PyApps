@@ -2,7 +2,7 @@ import requests
 import json
 import sys
 
-from .seismic_cube import DISeismicCube, DISeismicCubeWriter
+from .seismic_cube import DISeismicCube, DISeismicCubeWriter, DIGeometry
 from .seismic_line import DISeismicLine, DISeismicLineWriter
 from .attribute import DIAttribute2D, DIHorizon3D, DIHorizon3DWriter
 from .di_job import DiJob
@@ -27,7 +27,21 @@ class DISession:
             resp_j = json.loads(resp.content)
             return resp_j
 
+    def list_geometries(self):
+        with requests.get(f"{self.server_url}/seismic_3d/geometries/{self.project_id}/") as resp:
+            if resp.status_code != 200:
+                LOG.error("Cant' get list of geometries: %s", resp.status_code)
+                raise RuntimeError(f"Cant' get list of geometries: {resp.status_code=}")
+            resp_j = json.loads(resp.content)
+            return resp_j
 
+    def get_geometry(self, name: str) -> DIHorizon3D:
+        geometry = DIGeometry(self.project_id, name)
+        geometry.server_url = self.server_url
+        geometry.token = self.token
+        geometry._read_info()
+        return geometry
+    
     def list_cubes(self):
         with requests.get(f"{self.server_url}/seismic_3d/list/{self.project_id}/") as resp:
             if resp.status_code != 200:
@@ -55,6 +69,27 @@ class DISession:
         new_info["z_step"] = kw.get("z_step", original_info["z_step"])
         new_info["z_start"] = kw.get("z_start", original_info["z_start"])
         new_info["domain"] = kw.get("domain", original_info["domain"])
+        new_nz = kw.get("nz", None)
+        job_id = kw.get("job_id", None)
+        if new_nz is None:
+            # Recalculate nz according to new z_step
+            new_nz = round(original_info["nz"] * (original_info["z_step"]  / new_info["z_step"] ))
+        new_info["nz"] = new_nz
+        cube_writer._init_from_info(new_info)
+        cube_writer._create(job_id)
+        return cube_writer
+
+    def create_cube_writer_in_geometry(self, geometry_name: str, name: str, attr_name: str, **kw) -> DISeismicCubeWriter:
+        raise NotImplementedError()
+        # Find geometry with geometry_name
+        geometry = self.get_geometry(geometry_name)
+        cube_writer = DISeismicCubeWriter(self.project_id, name, attr_name)
+        cube_writer.server_url = self.server_url
+        cube_writer.token = self.token
+        new_info = {}
+        new_info["z_step"] = kw.get("z_step", 1)
+        new_info["z_start"] = kw.get("z_start", 0)
+        new_info["domain"] = kw.get("domain", "")
         new_nz = kw.get("nz", None)
         job_id = kw.get("job_id", None)
         if new_nz is None:

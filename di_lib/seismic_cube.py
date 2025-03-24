@@ -1,10 +1,11 @@
 import math
 import logging
-from typing import Optional
+from typing import Optional, Tuple, List
 import numpy as np
 import requests
 import json
 import struct
+from dataclasses import dataclass
 
 LOG = logging.getLogger(__name__)
 
@@ -68,6 +69,43 @@ def generate_fragments_grid(min_i, n_i, nfrags_i, min_x, n_x, nfrags_x):
     inc_i = (n_i - min_i) // nfrags_i
     inc_x = (n_x - min_x) // nfrags_x
     return generate_fragments_grid_incr(min_i, n_i, inc_i, min_x, n_x, inc_x)
+
+@dataclass(frozen=True)
+class DIGeometryInfo:
+    name: str
+    id: int
+    origin: Tuple[float, float]
+    v_i: Tuple[float, float]
+    v_x: Tuple[float, float]
+    ts: str
+    owner: str
+
+class DIGeometry:
+    def __init__(self, project_id: int, name: str) -> None:
+        self.server_url = ""
+        self.token = ""
+        self.project_id = project_id
+        self.name = name
+        self._geometry_info = None
+
+    @property
+    def info(self) -> DIGeometryInfo:
+        if self._geometry_info.id is None:
+            self._read_info()
+        return self._geometry_info
+
+    def _read_info(self) -> None:
+        with requests.get(f"{self.server_url}/seismic_3d/geometries/{self.project_id}/") as resp:
+            if resp.status_code != 200:
+                LOG.error("Caught exception during GET: %s", resp.content)
+                raise RuntimeError(f"Caught exception during GET: {resp.content}")
+            resp_j = json.loads(resp.content)
+            LOG.debug("Reply: %s", resp_j)
+            for geom in resp_j:
+                if geom["name"] == self.name:
+                    self._geometry_info = DIGeometryInfo(geom["name"], geom["id"], geom["origin"], geom["d_inline"], geom["d_xline"], ts=None, owner=None)
+                    return
+            raise ValueError(f"Geometry {self.name} not found")
 
 class DISeismicCube:
     def __init__(self, project_id: int, geometry_name: str, name: str, name2: str) -> None:
