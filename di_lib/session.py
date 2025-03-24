@@ -60,7 +60,7 @@ class DISession:
         return cube
 
     def create_cube_writer_as_other(self, original_cube: DISeismicCube, name: str, attr_name: str, **kw) -> DISeismicCubeWriter:
-        cube_writer = DISeismicCubeWriter(self.project_id, name, attr_name)
+        cube_writer = DISeismicCubeWriter(self.project_id, None, name, attr_name)
         cube_writer.server_url = self.server_url
         cube_writer.token = self.token
         original_info = original_cube._get_info()
@@ -79,22 +79,36 @@ class DISession:
         cube_writer._create(job_id)
         return cube_writer
 
-    def create_cube_writer_in_geometry(self, geometry_name: str, name: str, attr_name: str, **kw) -> DISeismicCubeWriter:
-        raise NotImplementedError()
+    def create_cube_writer_in_geometry(self, geometry_name: str, name: str, attr_name: str, 
+                                       max_inline: int, max_xline: int, z_step: float, z_start: float, 
+                                       nz: int,
+                                       **kw) -> DISeismicCubeWriter:
+        # raise NotImplementedError()
         # Find geometry with geometry_name
         geometry = self.get_geometry(geometry_name)
-        cube_writer = DISeismicCubeWriter(self.project_id, name, attr_name)
+        cube_writer = DISeismicCubeWriter(self.project_id, geometry_name, name, attr_name)
         cube_writer.server_url = self.server_url
         cube_writer.token = self.token
         new_info = {}
-        new_info["z_step"] = kw.get("z_step", 1)
-        new_info["z_start"] = kw.get("z_start", 0)
-        new_info["domain"] = kw.get("domain", "")
-        new_nz = kw.get("nz", None)
+        new_info["id"] = None
+        new_info["geometry_name"] = geometry_name
+        new_info["d_inline"] = geometry.info.v_i
+        new_info["d_xline"] = geometry.info.v_x
+        new_info["origin"] =  geometry.info.origin
+        new_info["geometry_id"] = geometry.info.id
+        new_info["z_step"] = z_step
+        new_info["z_start"] = z_start
+        new_info["domain"] = kw.get("domain", "T")
+        new_nz = nz
+        new_info["d_inline"] = geometry.info.v_i
+        new_info["d_xline"] = geometry.info.v_x
+        new_info["min_inline"] = kw.get("min_inline", 1)
+        new_info["min_xline"] = kw.get("min_xline", 1)
+        new_info["max_inline"] = max_inline
+        new_info["max_xline"] = max_xline
         job_id = kw.get("job_id", None)
-        if new_nz is None:
-            # Recalculate nz according to new z_step
-            new_nz = round(original_info["nz"] * (original_info["z_step"]  / new_info["z_step"] ))
+        if new_info["max_inline"] is None or new_info["max_xline"] is None or new_nz is None:
+            raise ValueError("max_inline, max_xline and nz must be specified")
         new_info["nz"] = new_nz
         cube_writer._init_from_info(new_info)
         cube_writer._create(job_id)

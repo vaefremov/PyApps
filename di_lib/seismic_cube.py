@@ -311,8 +311,8 @@ class DISeismicCube:
             raise ex
 
 class DISeismicCubeWriter(DISeismicCube):
-    def __init__(self, project_id: int, name: str, name2: str) -> None:
-        super().__init__(project_id, None, name, name2)
+    def __init__(self, project_id: int, geometry_name: str, name: str, name2: str) -> None:
+        super().__init__(project_id, geometry_name, name, name2)
 
     def _init_from_info(self, i) -> None:
         LOG.debug(f"{i}")
@@ -322,8 +322,8 @@ class DISeismicCubeWriter(DISeismicCube):
         self.origin = i["origin"]
         self.v_i = i["d_inline"]
         self.v_x = i["d_xline"]
-        self.n_i = i["max_inline"]-1
-        self.n_x = i["max_xline"]-1
+        self.n_i = i["max_inline"]+1
+        self.n_x = i["max_xline"]+1
         self.n_samples = i["nz"]
         self.time_step = i["z_step"]
         self.domain = i["domain"]
