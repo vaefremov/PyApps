@@ -43,7 +43,7 @@ def move_progress(f: Future):
             last_log_time = t
 
 def normalizes(a, mode):
-    if mode == 'From Bottom':
+    if mode == 'From_Bottom':
         norm = (a.max() - a) / (a.max() - a.min())
     else:
         norm = (a - a.min()) / (a.max() - a.min())
