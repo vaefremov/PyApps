@@ -88,7 +88,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
                 h_new_all[valid_i[idx], valid_j[idx], ind1[idx] : ind1[idx] + len(normalized)] = normalized
     
-        elif mode == 'From Top':
+        elif mode == 'From_Top':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
 
             valid_i, valid_j = np.where(~mask_nan)
@@ -113,7 +113,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
                 h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
 
-        elif mode == 'From Bottom':
+        elif mode == 'From_Bottom':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
 
             valid_i, valid_j = np.where(~mask_nan)
