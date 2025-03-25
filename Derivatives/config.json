@@ -55,7 +55,7 @@
           "default": 16},
         {"name": "margin",
          "type": "CustomInt",
-         "default": 4}
+         "default": 2}
       ]
     },
     "name": "Derivatives"
