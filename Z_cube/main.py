@@ -195,7 +195,7 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
                 
                 h_new_all = h_new_all.astype('float32')
                 np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-                cube_out.write_fragment(grid_not[z][0], grid_not[z][2], h_new_all)
+                cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
             except Exception as e:
                 LOG.error(f"Exception: {e}")
     
