@@ -171,7 +171,7 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
     countdown_min = int(np.nanmin(cube_time_new))
     countdown_max = int(np.nanmax(cube_time_new))
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x, hdata1)
-    cube_out = s.create_cube_writer_in_geometry(cube_in.geometry_name, job.description["New Name"] ,str(mode), cube_in.n_i+1, cube_in.n_x+1, cube_in.time_step, countdown_min, len(cube_time_new))
+    cube_out = s.create_cube_writer_in_geometry(cube_in.geometry_name, job.description["New Name"] ,str(mode), cube_in.n_i+1, cube_in.n_x+1, cube_in.time_step, countdown_min, len(cube_time_new),cube_in.min_i,cube_in.min_x)
     
     len_cube = len(grid_not)# Количество фрагметов большого куба
     global total_frag
@@ -202,7 +202,7 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
 class Zcube(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
         super().__init__(in_name_par="Input Seismic3D Geometry", 
-                out_name_par="New Name", out_names=['test'])
+                out_name_par="New Name", out_names=[])
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         raise NotImplementedError("Shouldn't be called in this application!")
