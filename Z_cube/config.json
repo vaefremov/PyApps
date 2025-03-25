@@ -6,7 +6,7 @@
     "parameters_template": [
         { "name": "Horizon", "inputDataType": "HorizonsNames", "type": "ListView" },
         { "name": "Input Seismic3D Geometry", 
-        "inputDataType": "SeismicDataGeoms3D", 
+        "inputDataType": "SeismicDataGeoms3DNames", 
         "collectChildren": true, "type": "ListView" },
         { "name": "New Name", "type": "LineEdit", "default": "Result" },
         {
