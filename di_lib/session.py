@@ -81,7 +81,7 @@ class DISession:
 
     def create_cube_writer_in_geometry(self, geometry_name: str, name: str, attr_name: str, 
                                        max_inline: int, max_xline: int, z_step: float, z_start: float, 
-                                       nz: int,
+                                       nz: int,min_inline,min_xline,
                                        **kw) -> DISeismicCubeWriter:
         # raise NotImplementedError()
         # Find geometry with geometry_name
@@ -101,8 +101,8 @@ class DISession:
         new_info["domain"] = kw.get("domain", "T")
         new_info["d_inline"] = geometry.info.v_i
         new_info["d_xline"] = geometry.info.v_x
-        new_info["min_inline"] = kw.get("min_inline", 1)
-        new_info["min_xline"] = kw.get("min_xline", 1)
+        new_info["min_inline"] = min_inline#kw.get("min_inline", 1)
+        new_info["min_xline"] = min_xline#kw.get("min_xline", 1)
         new_info["max_inline"] = max_inline
         new_info["max_xline"] = max_xline
         job_id = kw.get("job_id", None)
