@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r"C:\Users\ИТС\PyApps")
+
 from typing import Optional, Tuple
 import logging
 import numpy as np
@@ -137,7 +140,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
         
     return z,h_new_all
 
-def compute_slice(cube_in, cube_out, hor1, hor2,num_worker,mode,top_shift,top_bottom):
+def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     hdata01 = hor1.get_data()
     hdata01 = np.where((hdata01>= 0.1*MAXFLOAT) | (hdata01== np.inf), np.nan, hdata01)
@@ -171,7 +174,7 @@ def compute_slice(cube_in, cube_out, hor1, hor2,num_worker,mode,top_shift,top_bo
     countdown_min = int(np.nanmin(cube_time_new))
     countdown_max = int(np.nanmax(cube_time_new))
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x, hdata1)
-    new_zr_all = np.full((hdata1.shape[0],hdata1.shape[1],len(cube_time_new)), np.nan,dtype = np.float32)
+    cube_out = s.create_cube_writer_in_geometry(cube_in.geometry_name, job.description["New Name"] ,str(mode), cube_in.n_i+1, cube_in.n_x+1, cube_in.time_step, countdown_min, len(cube_time_new))
     
     len_cube = len(grid_not)# Количество фрагметов большого куба
     global total_frag
@@ -201,7 +204,7 @@ def compute_slice(cube_in, cube_out, hor1, hor2,num_worker,mode,top_shift,top_bo
     
 class Zcube(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="Input Seismic3D Names", 
+        super().__init__(in_name_par="Input Seismic3D Geometry", 
                 out_name_par="New Name", out_names=[])
 
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
@@ -224,8 +227,8 @@ if __name__ == "__main__":
     mode = job.description["mode"]
     hor1 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name1)
     hor2 = job.session.get_horizon_3d(cube_in.geometry_name, hor_name2)
-    cube_out = DISeismicCubeWriter(cube_in)
-    
-    compute_slice(cube_in, cube_out, hor1, hor2,num_worker,mode,top_shift,top_bottom)
+    s = job.session
+
+    compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
 
     LOG.info(f"Processing time (s): {time.time() - tm_start}")
