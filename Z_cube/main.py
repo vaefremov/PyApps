@@ -13,6 +13,8 @@ import time
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
+MAX_RETRIES = 3
+
 #incr_i = 150
 #incr_x = 150
 #num_worker = 16
@@ -29,7 +31,12 @@ def move_progress(f: Future):
         t = time.time()
         if t - last_log_time >= LOG_INTERVAL:
             LOG.info(f"Completion: {completed_frag*100 // total_frag}")
-            job.log_progress("calculation", completed_frag*100 // total_frag)  
+            for _ in range(MAX_RETRIES):
+                try:
+                    job.set_progress(completed_frag*100 // total_frag)
+                    break
+                except Exception as e:
+                    LOG.error(f"Exception: {e}")
             last_log_time = t
 
 def normalizes(a, mode, max_dif):
@@ -138,7 +145,13 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
     h_new_all = h_new_all.astype('float32')
     np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-    cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
+    for _ in range(MAX_RETRIES):
+        try:
+            cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
+            break
+        except Exception as e:
+            LOG.error(f"Error writing fragment: {e}")
+    # cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
         
     return z
 
