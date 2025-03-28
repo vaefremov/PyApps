@@ -10,6 +10,8 @@ from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
 import time
 
+from tenacity import retry, stop_after_attempt
+
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
+@retry(stop=stop_after_attempt(MAX_RETRIES))
 def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,countdown_min,countdown_max,cube_out,grid_real,max_dif):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor1.shape[0],grid_hor1.shape[1],len(cube_time_new)), np.nan, dtype = np.float32)
@@ -145,13 +148,13 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
     h_new_all = h_new_all.astype('float32')
     np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-    for _ in range(MAX_RETRIES):
-        try:
-            cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
-            break
-        except Exception as e:
-            LOG.error(f"Error writing fragment: {e}")
-    # cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
+    # for _ in range(MAX_RETRIES):
+    #     try:
+    #         cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
+    #         break
+    #     except Exception as e:
+    #         LOG.error(f"Error writing fragment: {e}")
+    cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
         
     return z
 
