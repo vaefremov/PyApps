@@ -143,10 +143,6 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
                     normalized = normalized[:slice_len]
 
                     h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
-
-    h_new_all = h_new_all.astype('float32')
-    np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-    cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
         
     return z,h_new_all
 
@@ -205,6 +201,10 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
 
             try:
                 z,h_new_all = f.result()
+
+                h_new_all = h_new_all.astype('float32')
+                np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
+                cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
             except Exception as e:
                 LOG.error(f"Exception: {e}")
     
