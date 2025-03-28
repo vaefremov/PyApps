@@ -52,9 +52,9 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor1.shape[0],grid_hor1.shape[1],len(cube_time_new)), np.nan, dtype = np.float32)
     if np.all(np.isnan(grid_hor1)) == True :
-        return z, h_new_all
+        return z
     elif np.all(np.isnan(grid_hor2)) == True if grid_hor2 is not None else False:
-        return z, h_new_all
+        return z
     else:      
         if mode == 'proportional':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
