@@ -13,12 +13,11 @@ import time
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
-MAX_RETRIES = 3
+MAX_RETRIES = 5
 
 #incr_i = 150
 #incr_x = 150
 #num_worker = 16
-MAX_RETRIES = 5
 completed_frag = 0
 total_frag = 0
 num_center_fragments = 3 # Количество центральных фрагментов, который в дальнейшем можно автоматизировать
@@ -197,32 +196,15 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
     global total_frag
     total_frag = len(grid_not)
     
-    def submit_with_retries(executor, k, cube_in, grid_hor1, grid_hor2, z_step_ms, mode, 
-                         cube_time, countdown_min, countdown_max, cube_out, grid_real, max_dif):
-        #global MAX_RETRIES
-        attempts = 0
-        while attempts < MAX_RETRIES:
-            try:
-                f = executor.submit(compute_fragment, k, cube_in, grid_hor1, grid_hor2, z_step_ms, 
-                                    mode, cube_time, countdown_min, countdown_max, cube_out, grid_real, max_dif)
-                f.add_done_callback(move_progress)
-                return f
-            except Exception as e:
-                LOG.error(f"Попытка {attempts + 1}/{MAX_RETRIES} для {k}: ошибка {e}")
-                attempts += 1
-        LOG.error(f"Задача {k} не выполнена после {MAX_RETRIES} попыток")
-        return None
-    
     with ProcessPoolExecutor(max_workers=num_worker) as executor:
         futures=[]
         for k in range(len(grid_not)):
             grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
             grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            f = submit_with_retries(executor, k, cube_in, grid_hor1, grid_hor2, z_step_ms, mode, cube_time, countdown_min, countdown_max, cube_out, grid_real, max_dif)
-            
-            if f:
-                futures.append(f)
-                LOG.debug(f"Submitted: {k=}")
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,z_step_ms,mode,cube_time,countdown_min,countdown_max,cube_out,grid_real,max_dif)
+            f.add_done_callback(move_progress)
+            futures.append(f)
+            LOG.debug(f"Submitted: {k=}")
 
         # completed_frag = 0
         for f in as_completed(futures):
