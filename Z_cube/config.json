@@ -30,7 +30,7 @@
           "type": "DoubleSpinBox",
           "title": "Сдвиг от нижнего горизонта, мс",
           "default": 0,
-          "min": 0,
+          "min": -100,
           "max": 100
         },
     {
