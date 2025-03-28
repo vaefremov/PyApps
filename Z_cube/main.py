@@ -33,7 +33,7 @@ def move_progress(f: Future):
             LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             for _ in range(MAX_RETRIES):
                 try:
-                    job.set_progress(completed_frag*100 // total_frag)
+                    job.log_progress("calculation", completed_frag*100 // total_frag)
                     break
                 except Exception as e:
                     LOG.error(f"Exception: {e}")
