@@ -1,23 +1,13 @@
-import sys
-sys.path.append(r"C:\Users\ИТС\PyApps")
-
 from typing import Optional, Tuple
 import logging
 import numpy as np
-from scipy.interpolate import interp1d
-from scipy.fft import rfft, rfftfreq
-from scipy.interpolate import CubicSpline,interp1d,Akima1DInterpolator
 
 from di_lib import di_app
 from di_lib.di_app import Context
-from di_lib.seismic_cube import DISeismicCube,DISeismicCubeWriter
-from di_lib.attribute import DIHorizon3D, DIAttribute2D
 
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, wait, Future, as_completed
 
-from typing import List
-import math
 import time
 
 logging.basicConfig(level=logging.INFO)
@@ -42,9 +32,11 @@ def move_progress(f: Future):
             job.log_progress("calculation", completed_frag*100 // total_frag)  
             last_log_time = t
 
-def normalizes(a, mode):
+def normalizes(a, mode, max_dif):
     if mode == 'From_Bottom':
-        norm = (a.max() - a) / (a.max() - a.min())
+        norm = (a.max() - a) / max_dif#(a.max() - a.min())
+    elif mode == 'From_Top':
+        norm = (a - a.min()) / max_dif#(a.max() - a.min())
     else:
         norm = (a - a.min()) / (a.max() - a.min())
     return norm
@@ -56,7 +48,7 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
-def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,countdown_min,countdown_max,cube_out,grid_real):
+def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,countdown_min,countdown_max,cube_out,grid_real,max_dif):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor1.shape[0],grid_hor1.shape[1],len(cube_time_new)), np.nan, dtype = np.float32)
     if np.all(np.isnan(grid_hor1)) == True :
@@ -82,13 +74,13 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
                 traces = traces[:slice_len]
 
                 if len(traces) > 1:
-                    normalized = normalizes(traces, mode)
+                    normalized = normalizes(traces, mode,max_dif)
                 else:
                     normalized = np.zeros_like(traces)
 
                 h_new_all[valid_i[idx], valid_j[idx], ind1[idx] : ind1[idx] + len(normalized)] = normalized
     
-        elif mode == 'From Top':
+        elif mode == 'From_Top':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
 
             valid_i, valid_j = np.where(~mask_nan)
@@ -107,7 +99,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
                 if indices.size > 0:
                     index = indices[0]
 
-                    normalized = normalizes(traces, mode)
+                    normalized = normalizes(traces, mode,max_dif)
 
                     normalized = normalized[:index]
 
@@ -116,7 +108,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
                     h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
 
-        elif mode == 'From Bottom':
+        elif mode == 'From_Bottom':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
 
             valid_i, valid_j = np.where(~mask_nan)
@@ -135,7 +127,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
                 if indices.size > 0:
                     index = indices[0]
 
-                    normalized = normalizes(traces, mode)
+                    normalized = normalizes(traces, mode,max_dif)
 
                     normalized = normalized[index:]
 
@@ -143,8 +135,12 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
                     normalized = normalized[:slice_len]
 
                     h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
+
+    h_new_all = h_new_all.astype('float32')
+    np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
+    cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
         
-    return z,h_new_all
+    return z
 
 def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom):
     MAXFLOAT = float(np.finfo(np.float32).max) 
@@ -179,6 +175,7 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
     cube_time_new = cube_time[index_min:index_max]
     countdown_min = int(np.nanmin(cube_time_new))
     countdown_max = int(np.nanmax(cube_time_new))
+    max_dif = np.nanmax(abs(hdata2 - hdata1))
     grid_real, grid_not = generate_fragments(cube_in.min_i, cube_in.n_i, incr_i, cube_in.min_x, cube_in.n_x, incr_x, hdata1)
     cube_out = s.create_cube_writer_in_geometry(cube_in.geometry_name, job.description["New Name"] ,str(mode), cube_in.n_i-1, cube_in.n_x-1, cube_in.time_step, cube_time[0], len(cube_time),cube_in.min_i,cube_in.min_x)
     
@@ -191,7 +188,7 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
         for k in range(len(grid_not)):
             grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
             grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,z_step_ms,mode,cube_time,countdown_min,countdown_max,cube_out,grid_real)
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,z_step_ms,mode,cube_time,countdown_min,countdown_max,cube_out,grid_real,max_dif)
             f.add_done_callback(move_progress)
             futures.append(f)
             LOG.debug(f"Submitted: {k=}")
@@ -200,11 +197,8 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
         for f in as_completed(futures):
 
             try:
-                z,h_new_all = f.result()
+                z = f.result()
 
-                h_new_all = h_new_all.astype('float32')
-                np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-                cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
             except Exception as e:
                 LOG.error(f"Exception: {e}")
     
