@@ -1,3 +1,6 @@
+import sys
+sys.path.append(r"C:\Users\ИТС\PyApps")
+
 from typing import Optional, Tuple
 import logging
 import numpy as np
@@ -53,7 +56,7 @@ def generate_fragments(min_i, n_i, incr_i, min_x, n_x, incr_x,hdata):
     res2 = [(i, j, min(hdata.shape[0]-1, i+inc_i-1), min(hdata.shape[1]-1, j+inc_x-1)) for i in range(0, hdata.shape[0]-1, inc_i) for j in range(0, hdata.shape[1]-1, inc_x)]
     return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res1], [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in res2]
 
-def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,countdown_min,countdown_max):
+def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,countdown_min,countdown_max,cube_out,grid_real):
     MAXFLOAT = float(np.finfo(np.float32).max) 
     h_new_all = np.full((grid_hor1.shape[0],grid_hor1.shape[1],len(cube_time_new)), np.nan, dtype = np.float32)
     if np.all(np.isnan(grid_hor1)) == True :
@@ -63,12 +66,12 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
     else:      
         if mode == 'proportional':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
-            
+
             valid_i, valid_j = np.where(~mask_nan)
-            
+
             grid1_valid = np.round(grid_hor1[valid_i, valid_j])
             grid2_valid = np.round(grid_hor2[valid_i, valid_j])
-            
+
             ind1 = np.argmin(np.abs(cube_time_new[:, None] - grid1_valid), axis=0)
             ind2 = np.argmin(np.abs(cube_time_new[:, None] - grid2_valid), axis=0)
 
@@ -85,7 +88,7 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
                 h_new_all[valid_i[idx], valid_j[idx], ind1[idx] : ind1[idx] + len(normalized)] = normalized
     
-        elif mode == 'From_Top':
+        elif mode == 'From Top':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
 
             valid_i, valid_j = np.where(~mask_nan)
@@ -99,18 +102,21 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
             for idx in range(len(valid_i)):
                 traces = np.arange(cube_time_new[ind1[idx]], countdown_max + z_step, z_step, dtype=float)
 
-                index = np.where(traces == cube_time_new[ind2[idx]])[0][0]
+                indices = np.where(traces == cube_time_new[ind2[idx]])[0]
+                
+                if indices.size > 0:
+                    index = indices[0]
 
-                normalized = normalizes(traces, mode)
+                    normalized = normalizes(traces, mode)
 
-                normalized = normalized[:index]
+                    normalized = normalized[:index]
 
-                slice_len = ind2[idx] - ind1[idx]
-                normalized = normalized[:slice_len]
+                    slice_len = ind2[idx] - ind1[idx]
+                    normalized = normalized[:slice_len]
 
-                h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
+                    h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
 
-        elif mode == 'From_Bottom':
+        elif mode == 'From Bottom':
             mask_nan = np.isnan(grid_hor1) | np.isnan(grid_hor2)
 
             valid_i, valid_j = np.where(~mask_nan)
@@ -123,17 +129,24 @@ def compute_fragment(z,cube_in,grid_hor1,grid_hor2,z_step,mode,cube_time_new,cou
 
             for idx in range(len(valid_i)):
                 traces = np.arange(countdown_min, cube_time_new[ind2[idx]] + z_step, z_step, dtype=float)
+                
+                indices = np.where(traces == cube_time_new[ind1[idx]])[0]
 
-                index = np.where(traces == cube_time_new[ind1[idx]])[0][0]
+                if indices.size > 0:
+                    index = indices[0]
 
-                normalized = normalizes(traces, mode)
+                    normalized = normalizes(traces, mode)
 
-                normalized = normalized[index:]
+                    normalized = normalized[index:]
 
-                slice_len = ind2[idx] - ind1[idx] + 1
-                normalized = normalized[:slice_len]
+                    slice_len = ind2[idx] - ind1[idx] + 1
+                    normalized = normalized[:slice_len]
 
-                h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
+                    h_new_all[valid_i[idx], valid_j[idx], ind1[idx]:ind1[idx] + len(normalized)] = normalized
+
+    h_new_all = h_new_all.astype('float32')
+    np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
+    cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
         
     return z,h_new_all
 
@@ -182,7 +195,7 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
         for k in range(len(grid_not)):
             grid_hor1 = hdata1[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
             grid_hor2 = hdata2[grid_not[k][0]:grid_not[k][0] + grid_not[k][1],grid_not[k][2]:grid_not[k][2] + grid_not[k][3]]
-            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,z_step_ms,mode,cube_time_new,countdown_min,countdown_max)
+            f = executor.submit(compute_fragment,k,cube_in,grid_hor1,grid_hor2,z_step_ms,mode,cube_time,countdown_min,countdown_max,cube_out,grid_real)
             f.add_done_callback(move_progress)
             futures.append(f)
             LOG.debug(f"Submitted: {k=}")
@@ -192,10 +205,6 @@ def compute_slice(cube_in, job, hor1, hor2,num_worker,mode,top_shift,top_bottom)
 
             try:
                 z,h_new_all = f.result()
-                
-                h_new_all = h_new_all.astype('float32')
-                np.nan_to_num(h_new_all, nan=MAXFLOAT, copy=False)
-                cube_out.write_fragment(grid_real[z][0], grid_real[z][2], h_new_all)
             except Exception as e:
                 LOG.error(f"Exception: {e}")
     
