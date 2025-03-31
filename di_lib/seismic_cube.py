@@ -366,6 +366,18 @@ class DISeismicCubeWriter(DISeismicCube):
         with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream"}) as resp:
             res_status = resp.status_code
             if resp.status_code != 200:
-                LOG.error("Failed to store inline group to cube, response code %s", resp.status_code)
+                LOG.error("Failed to store fragment to cube, response code %s", resp.status_code)
                 return res_status
         
+
+    def write_fragment_z(self, inline_no: int, xline_no: int, z_no: int, data_array):
+        url = f"{self.server_url}/seismic/data/rect_fragment_z/{self.cube_id}/?inline_no={inline_no}&xline_no={xline_no}&z_no={z_no}"
+        ninl, ncdps, nz = data_array.shape
+        pref = struct.pack('<iii', nz, ncdps, ninl)
+        data = pref + data_array.tobytes()
+        res_status = 200
+        with requests.post(url, data=data, headers={"Content-Type": "application/octet-stream"}) as resp:
+            res_status = resp.status_code
+            if resp.status_code != 200:
+                LOG.error("Failed to store fragment to cube, response code %s", resp.status_code)
+                return res_status
