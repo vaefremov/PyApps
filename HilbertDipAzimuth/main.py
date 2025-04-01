@@ -36,7 +36,7 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
     if w_phase or w_azimuth or w_dip:
         h_phase = np.arctan2(np.real(h), np.imag(h))
         np.nan_to_num(h_phase, nan=MAXFLOAT, copy=False)
-    if w_freq or w_azimuth or w_dip or h_sweetness:
+    if w_freq or w_azimuth or w_dip or w_sweetness:
         h_freq = (1/(2*np.pi*dt)) * np.imag(np.gradient(h, axis=2) / h)
         h_freq[h_freq < min_frequency] = min_frequency
         h_freq[h_freq > max_frequency] = max_frequency
