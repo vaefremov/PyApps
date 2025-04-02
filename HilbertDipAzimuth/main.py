@@ -91,7 +91,7 @@ class DipAzimuth(di_app.DiAppSeismic3D):
         tmp_f = taper_fragment(f_in, self.border_correction)
         if self.cube_in is not None:
             time_step_sec = self.cube_in.time_step/1e6
-            radius_sample = int(self.radius*time_step_sec/1000)
+            radius_sample = int(self.radius/(time_step_sec*1000))
         else:
             time_step_sec = None
             radius_sample = None
