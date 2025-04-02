@@ -64,7 +64,7 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         h_sweetness[:,:,radius:-radius] = mean_h_amp / np.sqrt(mean_h_freq)
         np.nan_to_num(h_sweetness, nan=MAXFLOAT, copy=False)
     return h_amp if w_amp else None, h_phase if w_phase else None, h_freq if w_freq else None, h_azimuth if w_azimuth else None,\
-          h_dip if w_dip else None
+          h_dip if w_dip else None, h_sweetness if w_sweetness else None
     
 class DipAzimuth(di_app.DiAppSeismic3D):
     def __init__(self) -> None:
