@@ -61,6 +61,13 @@
           "checked": true
         },
         {
+          "name": "sweetness",
+          "title": "Sweetness",
+          "title_ru_RU": "Сладость",
+          "type": "CheckBox",
+          "checked": true
+        },
+        {
           "name": "min_frequency",
           "type": "DoubleSpinBox",
           "title": "Minimum frequency",
@@ -75,6 +82,14 @@
           "default": 100,
           "min": 10,
           "max": 500
+        },
+        {
+          "name": "radius",
+          "type": "DoubleSpinBox",
+          "title": "Averaging radius [ms]",
+          "default": 2,
+          "min": 0,
+          "max": 1000
         },
         {
           "name": "border_correction",
