@@ -110,7 +110,7 @@ class DISeismicLineWriter(DISeismicLine):
         try:
             line_out = self._get_info()
             del line_out["id"]
-            LOG.info(f"{line_out=}")
+            LOG.debug(f"{line_out=}")
             body = json.dumps(line_out).encode("utf8")
             with requests.post(
                     url, data=body, headers={"Content-Type": "application/json", "x-di-authorization": self.token}
@@ -119,7 +119,7 @@ class DISeismicLineWriter(DISeismicLine):
                     LOG.error("Failed to create line, response code %s, %s", resp.status_code, resp.content)
                     raise RuntimeError(f"Failed to create line, response code {resp.status_code}")
                 resp_j = json.loads(resp.content)
-                LOG.info("Reply: %s", resp_j)
+                LOG.debug("Reply: %s", resp_j)
                 self.line_id = resp_j["id"]
         except requests.exceptions.ConnectionError as ex:
             LOG.error("Exception during POST: %s", str(ex))
