@@ -42,10 +42,11 @@ def compute_derivatives(fr, dt, laplacian2d, derivative_Z):
         h_derivative_Z = h_derivative_Z.astype('float32')
         np.nan_to_num(h_derivative_Z, nan=MAXFLOAT, copy=False)
     return h_laplacian2d  if laplacian2d else None, h_derivative_Z if derivative_Z else None
-class Derivative(di_app.DiAppSeismic3D):
+class Derivative(di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="seismic_3d", 
-                out_name_par="result_name", out_names=[])
+        super().__init__(in_name_par="Input Seismic3D Names", 
+                    in_line_geometries_par="Seismic2DGeometries", in_line_names_par="Input Seismic2D Names",
+                out_name_par="New Name", out_names=[])
         
         self.border_correction = self.description["border_correction"]
         self.laplacian2d = self.description.get("Laplacian2d", True)

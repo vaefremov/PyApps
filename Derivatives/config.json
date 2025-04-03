@@ -11,20 +11,18 @@
           "title_ru_RU": "Имя результата",
           "type": "LineEdit",
           "default": "derivative" },
-        {
-          "name": "seismic_2d",
+        { "name": "Input Seismic2D Names",
+         "inputDataType": "SeismicDataGeoms2DNames",
+         "collectChildren": true,
           "type": "ListView",
-          "inputDataType": "SeismicData2DGeoms",
           "title": "Select input 2D",
-          "title_ru_RU": "Выберите профили 2Д"
-        },
-        {
-          "name": "seismic_3d",
+          "title_ru_RU": "Выберите профили 2Д" },  
+        { "name": "Seismic2DGeometries", "inputDataType": "SeismicDataGeoms2DNames", "type": "CustomStringList" },
+        { "name": "Input Seismic3D Names",
+         "inputDataType": "SeismicDataGeoms3DCubes",
           "type": "ListView",
-          "inputDataType": "SeismicDataGeoms3DCubes",
           "title": "Select input 3D",
-          "title_ru_RU": "Выберите кубы 3Д"
-        },
+          "title_ru_RU": "Выберите кубы 3Д"},     
         {
           "name": "Laplacian2d",
           "title": "Sum of second derivatives",
