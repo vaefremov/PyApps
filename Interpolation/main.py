@@ -42,7 +42,7 @@ class InterpolationZ (di_app.DiAppSeismic3D2D):
         
         # Input datasets names are converted to the agreed upon format 
         # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
-        self.type_interpolation = self.description["interpolation"]
+        self.type_interpolation = self.description["Interpolation"]
         self.new_step = self.description["step"] * 1000.0 # input step is in ms, re-calculating to us
         self.out_data_params["z_step"] = self.new_step
        
