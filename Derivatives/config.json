@@ -6,11 +6,12 @@
         "Applications"
       ],
       "parameters_template": [
-        { "name": "result_name",
+        { "name": "New Name",
           "title": "Result name",
           "title_ru_RU": "Имя результата",
           "type": "LineEdit",
           "default": "derivative" },
+
         { "name": "Input Seismic2D Names",
          "inputDataType": "SeismicDataGeoms2DNames",
          "collectChildren": true,
