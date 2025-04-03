@@ -19,7 +19,7 @@ LOG = logging.getLogger(__name__)
 
 def taper_fragment(fr, border_correction: int):
     bl = np.blackman(border_correction*2+1)
-    mask = np.ones(fr.shape[2], dtype=np.float32)
+    mask = np.ones(fr.shape[-1], dtype=np.float32)
     mask[:border_correction] = bl[:border_correction]
     mask[-border_correction:] = bl[border_correction+1:]
     res = np.multiply(fr, mask)
@@ -43,22 +43,22 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         np.nan_to_num(h_freq, nan=MAXFLOAT, copy=False)
     if w_azimuth or w_dip:
         k = 0.5
-        ph_grad = np.gradient(h_phase)
+        ph_grad = np.asarray(np.gradient(h_phase))
         ph_grad[0] = np.where(ph_grad[0] >= k * np.pi, ph_grad[0] - np.pi, ph_grad[0])
         ph_grad[0] = np.where(ph_grad[0] <= -k * np.pi, ph_grad[0] + np.pi, ph_grad[0])
-        if h.shape==3:
+        if len(fr.shape)==3:
             ph_grad[1] = np.where(ph_grad[1] >= k * np.pi, ph_grad[1] - np.pi, ph_grad[1])    
             ph_grad[1] = np.where(ph_grad[1] <= -k * np.pi, ph_grad[1] + np.pi, ph_grad[1])
             h_azimuth  = np.arctan2(ph_grad[1], ph_grad[0])
-        elif h.shape==2:
-            h_azimuth  = np.arctan2(ph_grad[0])
+        elif len(fr.shape)==2:
+            h_azimuth  = np.arctan2(0,ph_grad[0])
         np.nan_to_num(h_azimuth, nan=MAXFLOAT, copy=False)
     if w_dip:
         q = np.divide(ph_grad[0], h_freq)
-        if h.shape==3:
+        if len(fr.shape)==3:
             p = np.divide(ph_grad[1], h_freq)
             h_dip = np.sqrt(p**2 + q**2)
-        elif h.shape==2:
+        elif len(fr.shape)==2:
             h_dip = np.abs(q)
         np.nan_to_num(h_dip, nan=MAXFLOAT, copy=False)
     if w_sweetness:
@@ -67,7 +67,10 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         h_freq_interim = np.where((h_freq>= 0.1*MAXFLOAT) | (h_freq== np.inf), np.nan, h_freq)
         mean_h_amp = np.nanmean(np.lib.stride_tricks.sliding_window_view(h_amp_interim,  axis=-1, window_shape = 2 * radius + 1),axis=-1)
         mean_h_freq = np.nanmean(np.lib.stride_tricks.sliding_window_view(h_freq_interim, axis=-1, window_shape = 2 * radius + 1),axis=-1)
-        h_sweetness[:,:,radius:-radius] = mean_h_amp / np.sqrt(mean_h_freq)
+        if len(fr.shape)==3:
+            h_sweetness[:,:,radius:-radius] = mean_h_amp / np.sqrt(mean_h_freq)
+        elif len(fr.shape)==2:
+            h_sweetness[:,radius:-radius] = mean_h_amp / np.sqrt(mean_h_freq)
         np.nan_to_num(h_sweetness, nan=MAXFLOAT, copy=False)
     return h_amp if w_amp else None, h_phase if w_phase else None, h_freq if w_freq else None, h_azimuth if w_azimuth else None,\
           h_dip if w_dip else None, h_sweetness if w_sweetness else None
