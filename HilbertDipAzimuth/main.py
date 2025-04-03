@@ -37,7 +37,7 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         h_phase = np.arctan2(np.real(h), np.imag(h))
         np.nan_to_num(h_phase, nan=MAXFLOAT, copy=False)
     if w_freq or w_azimuth or w_dip or w_sweetness:
-        h_freq = (1/(2*np.pi*dt)) * np.imag(np.gradient(h, axis=2) / h)
+        h_freq = (1/(2*np.pi*dt)) * np.imag(np.gradient(h, axis=-1) / h)
         h_freq[h_freq < min_frequency] = min_frequency
         h_freq[h_freq > max_frequency] = max_frequency
         np.nan_to_num(h_freq, nan=MAXFLOAT, copy=False)
@@ -45,15 +45,21 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         k = 0.5
         ph_grad = np.gradient(h_phase)
         ph_grad[0] = np.where(ph_grad[0] >= k * np.pi, ph_grad[0] - np.pi, ph_grad[0])
-        ph_grad[1] = np.where(ph_grad[1] >= k * np.pi, ph_grad[1] - np.pi, ph_grad[1])
         ph_grad[0] = np.where(ph_grad[0] <= -k * np.pi, ph_grad[0] + np.pi, ph_grad[0])
-        ph_grad[1] = np.where(ph_grad[1] <= -k * np.pi, ph_grad[1] + np.pi, ph_grad[1])
-        h_azimuth  = np.arctan2(ph_grad[1], ph_grad[0])
+        if h.shape==3:
+            ph_grad[1] = np.where(ph_grad[1] >= k * np.pi, ph_grad[1] - np.pi, ph_grad[1])    
+            ph_grad[1] = np.where(ph_grad[1] <= -k * np.pi, ph_grad[1] + np.pi, ph_grad[1])
+            h_azimuth  = np.arctan2(ph_grad[1], ph_grad[0])
+        elif h.shape==2:
+            h_azimuth  = np.arctan2(ph_grad[0])
         np.nan_to_num(h_azimuth, nan=MAXFLOAT, copy=False)
     if w_dip:
-        p = np.divide(ph_grad[1], h_freq)
         q = np.divide(ph_grad[0], h_freq)
-        h_dip = np.sqrt(p**2 + q**2)
+        if h.shape==3:
+            p = np.divide(ph_grad[1], h_freq)
+            h_dip = np.sqrt(p**2 + q**2)
+        elif h.shape==2:
+            h_dip = np.abs(q)
         np.nan_to_num(h_dip, nan=MAXFLOAT, copy=False)
     if w_sweetness:
         h_sweetness = np.full(fr.shape, np.nan, dtype = np.float32)
@@ -66,10 +72,11 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
     return h_amp if w_amp else None, h_phase if w_phase else None, h_freq if w_freq else None, h_azimuth if w_azimuth else None,\
           h_dip if w_dip else None, h_sweetness if w_sweetness else None
     
-class DipAzimuth(di_app.DiAppSeismic3D):
+class DipAzimuth(di_app.DiAppSeismic3D2D):
     def __init__(self) -> None:
-        super().__init__(in_name_par="seismic_3d", 
-                out_name_par="result_name", out_names=[])
+        super().__init__(in_name_par="Input Seismic3D Names", 
+                         in_line_geometries_par="Seismic2DGeometries", in_line_names_par="Input Seismic2D Names", 
+                out_name_par="New Name",out_names=[])
         
         self.min_frequency = self.description["min_frequency"]
         self.max_frequency = self.description["max_frequency"]
@@ -89,12 +96,13 @@ class DipAzimuth(di_app.DiAppSeismic3D):
     def compute(self, f_in_tup: Tuple[np.ndarray], context: Context) -> Tuple:
         f_in = f_in_tup[0]
         tmp_f = taper_fragment(f_in, self.border_correction)
-        if self.cube_in is not None:
-            time_step_sec = self.cube_in.time_step/1e6
+        time_step = context.out_cube_params["z_step"] if context.out_cube_params else context.out_line_params["z_step"]
+        if time_step is not None:
+            time_step_sec = time_step/1e6
             radius_sample = int(self.radius/(time_step_sec*1000))
         else:
             time_step_sec = None
-            radius_sample = None
+            radius_sample = None            
         f_out = compute_hilbert_transform(tmp_f, self.min_frequency,
                 self.max_frequency, radius_sample, time_step_sec, *self.out_flags)
         return tuple(i for i in f_out if i is not None)
