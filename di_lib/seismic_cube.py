@@ -307,6 +307,18 @@ class DISeismicCube:
             gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
             gr_arr.shape = (n_layers, ninlines, nxlines)
             return gr_arr
+        
+    def get_slice_2horizons(self, horizon_top_name: str, horizon_bottom_name: str):
+        url = f"{self.server_url}/seismic_3d/data/slice_2horizons/{self.cube_id}/"
+        with requests.get(url, params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name}) as resp:
+            # bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error(f"Request finished with error {resp.status_code}")
+            n_layers, min_nx, min_ny, nxlines, ninlines = struct.unpack("<iiiii", raw_data[:20])
+            gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
+            gr_arr.shape = (n_layers, ninlines, nxlines)
+            return gr_arr
 
     def generate_fragments_grid(self, nfrag_i, nfrag_x):
         tmp = generate_fragments_grid(self.min_i, self.n_i, nfrag_i, self.min_x, self.n_x, nfrag_x)
