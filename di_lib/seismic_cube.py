@@ -271,6 +271,42 @@ class DISeismicCube:
                 gr_arr.shape = (nxlines, nz)
             return gr_arr
 
+    def get_timeline(self, z_no: int, trimmed: bool=True):
+        url = f"{self.server_url}/seismic_3d/data/const_z/{self.cube_id}/?z_no={z_no}"
+        if trimmed:
+            url = f"{self.server_url}/seismic_3d/data/const_z_trim/{self.cube_id}/?z_no={z_no}"
+        with requests.get(url) as resp:
+            # bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error(f"Request finished with error {resp.status_code}")
+            start_i = 0
+            if trimmed:
+                start_i, start_x, nxlines, ninlines = struct.unpack("<iiii", raw_data[:16])
+            else:
+                nxlines, ninlines = struct.unpack("<ii", raw_data[:8])
+            LOG.debug(f"{nxlines=}, {ninlines=} {start_i=} {start_x=}")
+            if trimmed:            
+                gr_arr_p = np.frombuffer(raw_data[16:], dtype=np.float32)
+                gr_arr_p.shape = (ninlines, nxlines)
+                # gr_arr = np.vstack([np.full((start_i, nxlines), np.nan, dtype=np.float32), gr_arr_p])
+                gr_arr = gr_arr_p
+            else:
+                gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
+                gr_arr.shape = (ninlines, nxlines)
+            return gr_arr
+
+    def get_slice_1horizon(self, horizon_name: str, shift: float):
+        url = f"{self.server_url}/seismic_3d/data/slice_1horizon/{self.cube_id}/"
+        with requests.get(url, params={"horizon_top": horizon_name, "shift": shift}) as resp:
+            # bytes_read = len(resp.content)
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error(f"Request finished with error {resp.status_code}")
+            n_layers, min_nx, min_ny, nxlines, ninlines = struct.unpack("<iiiii", raw_data[:20])
+            gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
+            gr_arr.shape = (n_layers, ninlines, nxlines)
+            return gr_arr
 
     def generate_fragments_grid(self, nfrag_i, nfrag_x):
         tmp = generate_fragments_grid(self.min_i, self.n_i, nfrag_i, self.min_x, self.n_x, nfrag_x)
