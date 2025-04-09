@@ -40,6 +40,7 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         h_freq = (1/(2*np.pi*dt)) * np.imag(np.gradient(h, axis=-1) / h)
         h_freq[h_freq < min_frequency] = min_frequency
         h_freq[h_freq > max_frequency] = max_frequency
+        h_freq_interim = np.copy(h_freq)
         np.nan_to_num(h_freq, nan=MAXFLOAT, copy=False)
     if w_azimuth or w_dip:
         k = 0.5
@@ -54,9 +55,9 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
             h_azimuth  = np.arctan2(0,ph_grad[0])
         np.nan_to_num(h_azimuth, nan=MAXFLOAT, copy=False)
     if w_dip:
-        q = np.divide(ph_grad[0], h_freq)
+        q = np.divide(ph_grad[0], h_freq_interim)
         if len(fr.shape)==3:
-            p = np.divide(ph_grad[1], h_freq)
+            p = np.divide(ph_grad[1], h_freq_interim)
             h_dip = np.sqrt(p**2 + q**2)
         elif len(fr.shape)==2:
             h_dip = np.abs(q)
@@ -64,7 +65,6 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
     if w_sweetness:
         h_sweetness = np.full(fr.shape, np.nan, dtype = np.float32)
         h_amp_interim = np.where((h_amp>= 0.1*MAXFLOAT) | (h_amp== np.inf), np.nan, h_amp)
-        h_freq_interim = np.where((h_freq>= 0.1*MAXFLOAT) | (h_freq== np.inf), np.nan, h_freq)
         mean_h_amp = np.nanmean(np.lib.stride_tricks.sliding_window_view(h_amp_interim,  axis=-1, window_shape = 2 * radius + 1),axis=-1)
         mean_h_freq = np.nanmean(np.lib.stride_tricks.sliding_window_view(h_freq_interim, axis=-1, window_shape = 2 * radius + 1),axis=-1)
         if len(fr.shape)==3:
