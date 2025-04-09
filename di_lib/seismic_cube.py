@@ -308,9 +308,12 @@ class DISeismicCube:
             gr_arr.shape = (n_layers, ninlines, nxlines)
             return gr_arr
         
-    def get_slice_2horizons(self, horizon_top_name: str, horizon_bottom_name: str, interpolation: Optional[str]=None):
+    def get_slice_2horizons(self, horizon_top_name: str, horizon_bottom_name: str, relative_shift: float,
+                            interpolation: Optional[str]=None):
         url = f"{self.server_url}/seismic_3d/data/slice_2horizons/{self.cube_id}/"
-        with requests.get(url, params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name, "interpolation": interpolation or "no_interpolation"}) as resp:
+        with requests.get(url, params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name, 
+                                       "interpolation": interpolation or "no_interpolation",
+                                       "shift_percent": relative_shift}) as resp:
             # bytes_read = len(resp.content)
             raw_data = resp.content
             if resp.status_code != 200:
