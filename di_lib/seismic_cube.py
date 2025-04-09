@@ -296,9 +296,9 @@ class DISeismicCube:
                 gr_arr.shape = (ninlines, nxlines)
             return gr_arr
 
-    def get_slice_1horizon(self, horizon_name: str, shift: float):
+    def get_slice_1horizon(self, horizon_name: str, shift: float, interpolation: Optional[str]=None):
         url = f"{self.server_url}/seismic_3d/data/slice_1horizon/{self.cube_id}/"
-        with requests.get(url, params={"horizon_top": horizon_name, "shift": shift}) as resp:
+        with requests.get(url, params={"horizon_top": horizon_name, "shift": shift, "interpolation": interpolation or "no_interpolation"}) as resp:
             # bytes_read = len(resp.content)
             raw_data = resp.content
             if resp.status_code != 200:
@@ -308,9 +308,9 @@ class DISeismicCube:
             gr_arr.shape = (n_layers, ninlines, nxlines)
             return gr_arr
         
-    def get_slice_2horizons(self, horizon_top_name: str, horizon_bottom_name: str):
+    def get_slice_2horizons(self, horizon_top_name: str, horizon_bottom_name: str, interpolation: Optional[str]=None):
         url = f"{self.server_url}/seismic_3d/data/slice_2horizons/{self.cube_id}/"
-        with requests.get(url, params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name}) as resp:
+        with requests.get(url, params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name, "interpolation": interpolation or "no_interpolation"}) as resp:
             # bytes_read = len(resp.content)
             raw_data = resp.content
             if resp.status_code != 200:
