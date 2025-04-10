@@ -58,9 +58,9 @@ def compute_hilbert_transform(fr, min_frequency, max_frequency, radius, dt, w_am
         q = np.divide(ph_grad[0], h_freq_interim)
         if len(fr.shape)==3:
             p = np.divide(ph_grad[1], h_freq_interim)
-            h_dip = np.sqrt(p**2 + q**2)
+            h_dip = np.sqrt(p**2 + q**2) *100 
         elif len(fr.shape)==2:
-            h_dip = np.abs(q)
+            h_dip = np.abs(q) * 100
         np.nan_to_num(h_dip, nan=MAXFLOAT, copy=False)
     if w_sweetness:
         h_sweetness = np.full(fr.shape, np.nan, dtype = np.float32)
