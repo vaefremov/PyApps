@@ -38,14 +38,6 @@
           "type": "CheckBox",
           "checked": true
         },      
-        {
-          "name": "border_correction",
-          "type": "SpinBox",
-          "title": "Border correction (samples)",
-          "default": 20,
-          "min": 0,
-          "max": 100
-        },
         { 
           "name": "Threads Count", 
           "type": "SpinBox", 

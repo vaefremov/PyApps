@@ -42,7 +42,7 @@ class Derivative(di_app.DiAppSeismic3D2D):
                     in_line_geometries_par="Seismic2DGeometries", in_line_names_par="Input Seismic2D Names",
                 out_name_par="New Name", out_names=[])
         
-        self.border_correction = self.description["border_correction"]
+        #self.border_correction = self.description["border_correction"]
         self.laplacian2d = self.description.get("Laplacian2d", True)
         self.first_derivative_Z = self.description.get("first_derivative_Z", True)
         out_names = ["Laplacian2d", "first derivative Z"]
