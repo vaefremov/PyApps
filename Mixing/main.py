@@ -20,12 +20,18 @@ def vec_corrcoef(X, Y, axis=1):
     d = np.std(Xm ,axis=axis)*np.std(Ym,axis=axis)
     return n / d
 
-def corelater(traces,shift,window,p,indC,idx,win_c,att_vec):
-    x    = traces[indC[0],indC[1],:]
+def corelater(traces,frm,shift,window,p,indC,idx,win_c,att_vec):
     
-    pidx = np.where((p[:,0]>=0) & (p[:,1]>=0) & (p[:,0]<traces.shape[0]) & (p[:,1]<traces.shape[1]))
-    p = p[pidx]
-    data = traces[p[:,0],p[:,1],:]
+    if frm == "2d":
+        x    = traces[indC,:]
+        pidx = np.where((p>=0) & (p < traces.shape[0]))
+        p = p[pidx]
+        data = traces[p,:]
+    elif frm == "3d":
+        x    = traces[indC[0],indC[1],:]
+        pidx = np.where((p[:,0]>=0) & (p[:,1]>=0) & (p[:,0]<traces.shape[0]) & (p[:,1]<traces.shape[1]))
+        p = p[pidx]
+        data = traces[p[:,0],p[:,1],:]
     
     att_vec = att_vec[pidx]
     not_nan_idx = ~np.isnan(data).all(axis=1)
@@ -115,7 +121,7 @@ class Mixer(di_app.DiAppSeismic3D2D):
                     else:
                         indC = [i, j]
                         indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
-                        mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
+                        mix_sig = corelater(f_in, frm, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
                         newTraces[indC[0], indC[1], :] = mix_sig
         elif len(f_in.shape) == 2:
             frm = '2d'
@@ -130,8 +136,8 @@ class Mixer(di_app.DiAppSeismic3D2D):
                 else:
                     indC = i
                     indAll = nokta(indC, frm, self.halfwin_traces, self.type_neighbors)
-                    mix_sig = corelater(f_in, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
-                    newTraces[indC[0], indC[1], :] = mix_sig
+                    mix_sig = corelater(f_in, frm, self.shift, self.window, indAll, indC, idx, self.win_c, att_vec)
+                    newTraces[indC, :] = mix_sig
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
         newTraces = newTraces.astype('float32')
