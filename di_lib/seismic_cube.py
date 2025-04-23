@@ -340,6 +340,28 @@ class DISeismicCube:
             gr_arr.shape = (n_layers, ninlines, nxlines)
             return gr_arr
 
+    def get_slice_2horizons_in_area(self, horizon_top_name: str, horizon_bottom_name: str, relative_shift: float,
+                            interpolation: Optional[str]=None,
+                            area: Optional[List[Tuple[float, float]]]=None, area_id: Optional[int]=None):
+        url = f"{self.server_url}/seismic_3d/data/slice_2horizons_area/{self.cube_id}/"
+        body = json.dumps(area)
+        # params={"horizon_name": horizon_name, "shift": shift, "interpolation": interpolation or "no_interpolation"}
+        params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name, 
+                                       "interpolation": interpolation or "no_interpolation",
+                                       "shift_percent": relative_shift}
+        if area_id is not None:
+            params["area_id"] = area_id
+        with requests.post(url, data=body, params=params) as resp:
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error(f"Request finished with error {resp.status_code}")
+                raise ValueError(f"Request finished with error {resp.status_code}")
+            n_layers, min_nx, min_ny, nxlines, ninlines = struct.unpack("<iiiii", raw_data[:20])
+            gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
+            gr_arr.shape = (n_layers, ninlines, nxlines)
+            return gr_arr
+        
+
     def generate_fragments_grid(self, nfrag_i, nfrag_x):
         tmp = generate_fragments_grid(self.min_i, self.n_i, nfrag_i, self.min_x, self.n_x, nfrag_x)
         return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in tmp]
