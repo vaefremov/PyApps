@@ -18,7 +18,7 @@ class AreaInfo(BaseModel):
     id: Optional[int] = None
     area: List[Tuple[float, float]]
     ts: str
-    owner: Optional[str]
+    user_name: Optional[str]
 
     @validator("area", pre=True)
     def ensure_list(cls, value):
@@ -32,7 +32,7 @@ class DIArea:
         self.token = ""
         self.project_id = project_id
         self.name = name
-        self._area_info: AreaInfo = AreaInfo(name=self.name, id=None, area=[], ts="", owner=None)
+        self._area_info: AreaInfo = AreaInfo(name=self.name, id=None, area=[], ts="", user_name=None)
 
     @property
     def area_info(self) -> AreaInfo:
@@ -91,7 +91,7 @@ class DIArea:
             hor_out = self._get_info()
             del hor_out["id"]
             del hor_out["ts"]
-            del hor_out["owner"]
+            del hor_out["user_name"]
             LOG.info(f"{hor_out=}")
             body = json.dumps(hor_out).encode("utf8")
             with requests.post(
@@ -116,7 +116,7 @@ class DIArea:
             hor_out = self._area_info.dict()
             del hor_out["id"]
             del hor_out["ts"]
-            del hor_out["owner"]
+            del hor_out["user_name"]
             LOG.info(f"{hor_out=}")
             body = json.dumps(hor_out).encode("utf8")
             with requests.post(
@@ -138,7 +138,7 @@ def new_area(server_url: str, token: str, project_id: int, name: str, path: List
     area = DIArea(project_id, name)
     area.server_url = server_url
     area.token = token
-    area._area_info = AreaInfo(name=name, id=None, area=path, ts="", owner=None)
+    area._area_info = AreaInfo(name=name, id=None, area=path, ts="", user_name=None)
     area._create()
     return area
 

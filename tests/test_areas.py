@@ -12,7 +12,7 @@ class TestAreaInfo(unittest.TestCase):
         self.assertIsNone(area_info.id)
         self.assertEqual(area_info.area, [(1.0, 2.0), (3.0, 4.0)])
         self.assertEqual(area_info.ts, "2025-03-05")
-        self.assertIsNone(area_info.owner)
+        self.assertIsNone(area_info.user_name)
     
     def test_ensure_list_validator(self):
         """Test that the ensure_list validator correctly handles None values"""
@@ -72,7 +72,7 @@ class TestDIArea(unittest.TestCase):
         self.assertEqual(area_info.name, "test_area")
         self.assertEqual(area_info.area, self.polygon_data)
         self.assertEqual(area_info.ts, "2025-03-05T12:00:00Z")
-        self.assertEqual(area_info.owner, "test_user")
+        self.assertEqual(area_info.user_name, "test_user")
     
     @patch('requests.get')
     def test_read_info_area_not_found(self, mock_get):
@@ -112,7 +112,7 @@ class TestDIArea(unittest.TestCase):
             name="test_area",
             area=self.polygon_data,
             ts="2025-03-05T12:00:00Z",
-            owner="test_user"
+            user_name="test_user"
         )
         mock_read_info.return_value = mock_area_info
         
@@ -161,7 +161,7 @@ class TestDIArea(unittest.TestCase):
             name="test_area",
             area=self.polygon_data,
             ts="old_timestamp",
-            owner="test_user"
+            user_name="test_user"
         )
         
         # Call _update
@@ -204,7 +204,7 @@ class TestDIArea(unittest.TestCase):
             name="test_area",
             area=self.polygon_data,
             ts="",
-            owner=None
+            user_name=None
         )
         
         with self.assertRaises(RuntimeError) as context:
@@ -231,7 +231,7 @@ class TestDIArea(unittest.TestCase):
             name="test_area",
             area=self.polygon_data,
             ts="",
-            owner=None
+            user_name=None
         )
         
         # Call _create
@@ -274,7 +274,7 @@ class TestDIArea(unittest.TestCase):
             name="test_area",
             area=self.polygon_data,
             ts="",
-            owner=None
+            user_name=None
         )
         
         with self.assertRaises(RuntimeError) as context:
@@ -306,7 +306,7 @@ class TestNewArea(unittest.TestCase):
         self.assertIsNone(area._area_info.id)
         self.assertEqual(area._area_info.area, path)
         self.assertEqual(area._area_info.ts, "")
-        self.assertIsNone(area._area_info.owner)
+        self.assertIsNone(area._area_info.user_name)
         
         # Check that _create was called
         mock_create.assert_called_once()
