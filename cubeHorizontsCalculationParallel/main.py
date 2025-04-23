@@ -232,6 +232,16 @@ def sum_amplitude(a,grid_size):
                 s_a[i,j]= np.nansum(a[k])
     return s_a
 
+def sum_absolute_amplitude(a,grid_size):
+    s_aa = np.full((grid_size[0],grid_size[1]), np.nan)
+    for i in range(grid_size[0]):
+        for j in range(grid_size[1]):
+            k=i*grid_size[1] + j
+            if np.isnan(a[k]).all():
+                s_aa[i,j] = np.nan
+            else:
+                s_aa[i,j]= np.nansum(np.abs(a[k]))
+    return s_aa
 #@njit 
 def mean_power(a,grid_size):
     m_p = np.full((grid_size[0],grid_size[1]), np.nan)
@@ -478,6 +488,9 @@ def compute_fragment(z, cube_in, distance_up, distance_down, min_freq, max_freq,
                 if "sum_amplitude" in attributes:
                     h_new_all["sum_amplitude"] = sum_amplitude(fr_intv, fr_size)
 
+                if "sum_absolute_amplitude" or "scaling_factor" in attributes:
+                    h_new_all["sum_absolute_amplitude"] = sum_absolute_amplitude(fr_intv, fr_size)
+
                 if "Abs_a_div_effective_amp" in attributes:
                     h_new_all["Abs_a_div_effective_amp"] = np.fabs(h_new_all["Amplitude"]) / h_new_all["Effective_amp"]
 
@@ -567,7 +580,9 @@ def compute_attribute(cube_in: DISeismicCube, hor_in1: DIHorizon3D, hor_in2: DIH
             # completed_frag += 1
             # LOG.info(f"Completion: {completed_frag*100 // total_frag}")
             # job.log_progress("calculation", completed_frag*100 // total_frag) 
-        
+    if "scaling_factor" in attributes:
+        new_zr_all["scaling_factor"] = 1. + (np.nanmean(new_zr_all["sum_absolute_amplitude"]) - new_zr_all["sum_absolute_amplitude"]) / new_zr_all["sum_absolute_amplitude"]   
+         
     for a in attributes:
         new_zr_all[a] = new_zr_all[a].astype('float32')
         np.nan_to_num(new_zr_all[a], nan=MAXFLOAT, copy=False)
