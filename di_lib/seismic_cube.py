@@ -299,10 +299,27 @@ class DISeismicCube:
     def get_slice_1horizon(self, horizon_name: str, shift: float, interpolation: Optional[str]=None):
         url = f"{self.server_url}/seismic_3d/data/slice_1horizon/{self.cube_id}/"
         with requests.get(url, params={"horizon_top": horizon_name, "shift": shift, "interpolation": interpolation or "no_interpolation"}) as resp:
-            # bytes_read = len(resp.content)
             raw_data = resp.content
             if resp.status_code != 200:
                 LOG.error(f"Request finished with error {resp.status_code}")
+                raise ValueError(f"Request finished with error {resp.status_code}")
+            n_layers, min_nx, min_ny, nxlines, ninlines = struct.unpack("<iiiii", raw_data[:20])
+            gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
+            gr_arr.shape = (n_layers, ninlines, nxlines)
+            return gr_arr
+        
+    def get_slice_1horizon_in_area(self, horizon_name: str, shift: float, interpolation: Optional[str]=None,
+                                   area: Optional[List[Tuple[float, float]]]=None, area_id: Optional[int]=None):
+        url = f"{self.server_url}/seismic_3d/data/slice_1horizon_area/{self.cube_id}/"
+        body = json.dumps(area)
+        params={"horizon_name": horizon_name, "shift": shift, "interpolation": interpolation or "no_interpolation"}
+        if area_id is not None:
+            params["area_id"] = area_id
+        with requests.post(url, data=body, params=params) as resp:
+            raw_data = resp.content
+            if resp.status_code != 200:
+                LOG.error(f"Request finished with error {resp.status_code}")
+                raise ValueError(f"Request finished with error {resp.status_code}")
             n_layers, min_nx, min_ny, nxlines, ninlines = struct.unpack("<iiiii", raw_data[:20])
             gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
             gr_arr.shape = (n_layers, ninlines, nxlines)
@@ -314,10 +331,10 @@ class DISeismicCube:
         with requests.get(url, params={"horizon_top": horizon_top_name, "horizon_bottom": horizon_bottom_name, 
                                        "interpolation": interpolation or "no_interpolation",
                                        "shift_percent": relative_shift}) as resp:
-            # bytes_read = len(resp.content)
             raw_data = resp.content
             if resp.status_code != 200:
                 LOG.error(f"Request finished with error {resp.status_code}")
+                raise ValueError(f"Request finished with error {resp.status_code}")
             n_layers, min_nx, min_ny, nxlines, ninlines = struct.unpack("<iiiii", raw_data[:20])
             gr_arr = np.frombuffer(raw_data[20:], dtype=np.float32)
             gr_arr.shape = (n_layers, ninlines, nxlines)
