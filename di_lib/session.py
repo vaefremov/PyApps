@@ -6,6 +6,7 @@ from .seismic_cube import DISeismicCube, DISeismicCubeWriter, DIGeometry
 from .seismic_line import DISeismicLine, DISeismicLineWriter
 from .attribute import DIAttribute2D, DIHorizon3D, DIHorizon3DWriter
 from .di_job import DiJob
+from .area import DIArea
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -279,3 +280,9 @@ class DISession:
                 return None
             resp_j = json.loads(resp.content)
             return resp_j
+
+    def get_area_by_name(self, name):
+        area = DIArea(self.project_id, name)
+        area.server_url = self.server_url
+        area.token = self.token
+        return area
