@@ -21,16 +21,19 @@ def vec_corrcoef(X, Y, axis=1):
     return n / d
 
 def corr(x,data,window,shift):
-    x_m    = np.lib.stride_tricks.sliding_window_view(x, axis=0, window_shape = 2 * window + 1)
-    data_m = np.lib.stride_tricks.sliding_window_view(data, axis=1, window_shape = 2 * window + 1)
+    x_m = np.lib.stride_tricks.sliding_window_view(x, window_shape=2 * window + 1, axis=0)
+    data_m = np.lib.stride_tricks.sliding_window_view(data, window_shape=2 * window + 1, axis=1)
     if shift == 0:
-        cor = np.min(vec_corrcoef(x_m[None,:,:], data_m, axis=2),axis=0)
+        return np.nanmin(vec_corrcoef(x_m[None, :, :], data_m, axis=2), axis=0)
     else:
-        cor = np.zeros((2 * shift + 1,data.shape[0],x.shape[0] - 2 * shift - 2 * window))
-        for j in range(-shift,shift + 1):
-            cor[j,:,:] = vec_corrcoef(x_m[None,shift:x_m.shape[0] - shift,:], data_m[:,j + shift:data_m.shape[1]-shift + j,:], axis=2)
-        cor = np.min(np.max(cor,axis=0),axis=0)
-    return cor
+        x_strided = x_m[shift: -shift]
+        data_slices = []
+        for j in range(-shift, shift + 1):
+            d = data_m[:, j + shift : data_m.shape[1] - shift + j, :]
+            data_slices.append(vec_corrcoef(x_strided[None, :, :], d, axis=2))
+        
+        cor = np.stack(data_slices, axis=0)
+        return np.nanmin(np.nanmax(cor, axis=0), axis=0)
 
 def corelater(Traces1,shift,window,p,indC,frm):
     if frm == '3d':
