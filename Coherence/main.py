@@ -21,18 +21,14 @@ def vec_corrcoef(X, Y, axis=1):
     return n / d
 
 def corr(x,data,window,shift):
-    x_m = np.lib.stride_tricks.sliding_window_view(x, window_shape=2 * window + 1, axis=0)
-    data_m = np.lib.stride_tricks.sliding_window_view(data, window_shape=2 * window + 1, axis=1)
+    x_m    = np.lib.stride_tricks.sliding_window_view(x, axis=0, window_shape = 2 * window + 1)
+    data_m = np.lib.stride_tricks.sliding_window_view(data, axis=1, window_shape = 2 * window + 1)
     if shift == 0:
         return np.nanmin(vec_corrcoef(x_m[None, :, :], data_m, axis=2), axis=0)
     else:
-        x_strided = x_m[shift: -shift]
-        data_slices = []
-        for j in range(-shift, shift + 1):
-            d = data_m[:, j + shift : data_m.shape[1] - shift + j, :]
-            data_slices.append(vec_corrcoef(x_strided[None, :, :], d, axis=2))
-        
-        cor = np.stack(data_slices, axis=0)
+        cor = np.zeros((2 * shift + 1,data.shape[0],x.shape[0] - 2 * shift - 2 * window))
+        for j in range(-shift,shift + 1):
+            cor[j,:,:] = vec_corrcoef(x_m[None,shift:x_m.shape[0] - shift,:], data_m[:,j + shift:data_m.shape[1]-shift + j,:], axis=2)
         return np.nanmin(np.nanmax(cor, axis=0), axis=0)
 
 def corelater(Traces1,shift,window,p,indC,frm):
@@ -86,28 +82,28 @@ class Coherence(di_app.DiAppSeismic3D2D):
             frm = '3d'
             newTraces = np.full_like(f_in, np.nan, dtype=np.float32)
             f_in[np.all(np.isinf(f_in), axis=2)] = np.nan
-
-            valid_mask = ~np.isnan(f_in).all(axis=2)
-            valid_indices = np.argwhere(valid_mask[1:-1, 1:-1]) + 1 
             
-            for i, j in valid_indices:
-                indC = [i, j]
-                indAll = nokta(indC, frm)
-                sig = corelater(f_in, self.max_shift, self.min_window, indAll, indC, frm)
-                newTraces[i,j,self.min_window + self.max_shift:f_in.shape[2] - self.min_window-2 * self.max_shift + self.max_shift] = sig
+            for i in range(1,f_in.shape[0]-1):
+                for j in range(1,f_in.shape[1]-1):
+                    if np.isnan(f_in[i, j, :]).all():
+                        continue
+                    indC = [i,j]
+                    indAll = nokta(indC,frm)
+                    sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
+                    newTraces[indC[0],indC[1],self.min_window + self.max_shift:f_in.shape[2] - self.min_window-2 * self.max_shift + self.max_shift] = sig
         elif len(f_in.shape) == 2:
             frm = '2d'
             newTraces = np.full_like(f_in, np.nan, dtype=np.float32)
             f_in[np.isinf(f_in).all(axis=1)] = np.nan
-
-            valid_indices = np.where(~np.isnan(f_in).all(axis=1))[0]
-            valid_indices = valid_indices[(valid_indices > 0) & (valid_indices < f_in.shape[0] - 1)]
             
-            for i in valid_indices:
+            for i in range(1,f_in.shape[0]-1):
+                if np.isnan(f_in[i, :]).all():
+                    continue
                 indC = i
-                indAll = nokta(indC, frm)
-                sig = corelater(f_in, self.max_shift, self.min_window, indAll, indC, frm)
-                newTraces[i,self.min_window + self.max_shift:f_in.shape[1] - self.min_window-2 * self.max_shift + self.max_shift] = sig
+                indAll = nokta(indC,frm)
+                sig = corelater(f_in,self.max_shift,self.min_window,indAll,indC,frm)
+                newTraces[indC,self.min_window + self.max_shift:f_in.shape[1] - self.min_window-2 * self.max_shift + self.max_shift] = sig
+ 
         else:
             raise ValueError(f"Unsupported input shape: {f_in.shape}")
         np.nan_to_num(newTraces, nan=MAXFLOAT, copy=False)
