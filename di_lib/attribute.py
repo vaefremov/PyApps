@@ -150,6 +150,21 @@ class DIHorizon3DWriter(DIHorizon3D):
                 LOG.error("Failed to store horizon data, response code %s", resp.status_code)
                 return res_status
 
+    def write_data_fragment(self, start_nx: int, start_ny: int, data_array):
+        if data_array.dtype != np.float32:
+            raise ValueError('Data type must be float32')
+        url = f"{self.server_url}/horizons/3d/update_data_fragment/{self.project_id}/{self.horizon_id}/"
+        nx, ny = data_array.shape
+        pref = struct.pack('<ii', nx, ny)
+        data = pref + data_array.tobytes()
+        res_status = 200
+        with requests.post(url, data=data, params={"start_nx": start_nx, "start_ny": start_ny},
+                           headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+            res_status = resp.status_code
+            if resp.status_code != 200:
+                LOG.error("Failed to store horizon data, response code %s", resp.status_code)
+                return res_status
+
 class DIAttribute2D(DIHorizon3DWriter):
     """Reader/writer for layered attributes.
     """
