@@ -36,7 +36,7 @@ class DISession:
             resp_j = json.loads(resp.content)
             return resp_j
 
-    def get_geometry(self, name: str) -> DIHorizon3D:
+    def get_geometry(self, name: str) -> DIGeometry:
         geometry = DIGeometry(self.project_id, name)
         geometry.server_url = self.server_url
         geometry.token = self.token
