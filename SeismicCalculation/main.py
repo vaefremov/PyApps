@@ -182,7 +182,18 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 c_out = self.session.create_cube_writer_in_geometry(cube_in.geometry_name, name, name2, z_step = self.z_step, z_start = self.z_start, nz = self.n_samples,max_inline=self.n_i-1,
                                                                     max_xline = self.n_x-1, min_inline = self.min_i,min_xline = self.min_x,**self.out_data_params)# здесь должен быть правильный z_step,z_start
                 res.append(c_out)
-        else:
+        elif self.output_data_type == "horizonAttributes_3d":
+            hor = self.data_in[-1]
+            res = []
+
+            for result_name in self.out_names:
+                
+                name = self.description[self.out_name_par]
+                name2 = f"{result_name}"
+                c_out = self.session.create_attribute_2d_writer_as_other(hor, name, name2, domain="D", copy_horizon_data=True)
+                res.append(c_out)
+
+        elif self.output_data_type == "horizons_3d":
             hor = self.data_in[-1]
             res = []
             
@@ -190,11 +201,11 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
                 #if self.cubes_in!={}:
-                c_out = self.session.create_attribute_2d_writer_as_other(hor, name, name2, domain="D", copy_horizon_data=False,**self.out_data_params)
+                c_out = self.session.create_horizon_3d_writer_as_other(hor, name)
                 res.append(c_out)
         return res
     def generate_fragments_grid_incr(self, incr_i, incr_x):
-        tmp= generate_fragments_grid_incr(self.min_i, self.n_i, incr_i, self.min_x, self.n_x, incr_x)
+        tmp = generate_fragments_grid_incr(self.min_i, self.n_i, incr_i, self.min_x, self.n_x, incr_x)
         return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in tmp]
     
     def generate_optimal_grid(self):
@@ -204,8 +215,12 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         incr_x = 64
         #c = self.data_in[0]
         # найти места пересечения
-
-        grid = self.generate_fragments_grid_incr(incr_i, incr_x)
+        if self.output_data_type == "horizonAttributes_3d":
+            
+            #grid = self.generate_fragments_grid_incr(incr_i=self.n_i, incr_x =self.n_x)
+            grid = [(self.min_i, self.n_i, self.min_x, self.n_x)]
+        else:
+            grid = self.generate_fragments_grid_incr(incr_i, incr_x)
         self.grid = grid
         return grid
 
@@ -223,22 +238,27 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         enum_grid = enumerate(grid)
         self.total_frags = len(grid)
         run_args = {i[0]: ProcessCParams(data_in, w_out, i[1]) for i in enum_grid}
-    
         return run_args  
     def get_fragment_2D(self,c_in: Optional[str],  inline_no: int, inline_count: int, xline_no: int, xline_count: int) -> Optional[np.ndarray]:
         arg = c_in.get_data()
-        return arg[inline_no-self.min_i:inline_no + inline_count -self.min_i,xline_no-self.min_x:xline_no + xline_count-self.min_x] 
+        return arg[inline_no - self.min_i:inline_no + inline_count - self.min_i + 1,xline_no - self.min_x:xline_no + xline_count - self.min_x + 1] 
 
     def process_data(self, task_id, params: ProcessCParams) -> Tuple[int, str]:
         def output_frag_if_not_none(w_out, f_out, f_coords):
             if w_out:
                 if self.output_data_type == "seismic_3d":
                     w_out.write_fragment(f_coords[0], f_coords[2], f_out)
+                elif self.output_data_type == "horizonAttributes_3d":
+                    w_out.write_data(f_out)
                 else:
                     w_out.write_data_fragment(f_coords[0], f_coords[2], f_out)
         #tmp_f = tuple([c.get_fragment_z(*params.frag,z_no=2,z_count=30) for c in params.c_in])
         #Если приходит куб, использовать готовую функцию чтения по фрагментам для класса куб, иначе get_fragment_2D
+        #if self.output_data_type == "horizonAttributes_3d":
+        #    tmp_f = tuple([self.get_fragment_2D(c,*params.frag) for c in params.c_in])
+        #else:    
         tmp_f = tuple([c.get_fragment(*params.frag) if type(c).__name__ == "DISeismicCube"  else self.get_fragment_2D(c,*params.frag) for c in params.c_in])
+
         for f in tmp_f:
             if f is None:
                 LOG.debug(f"Skipped: {task_id} {params.frag}")
@@ -251,7 +271,6 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         if di_app.DiApp.wrong_output_formats(tmp_f, f_out):
             raise RuntimeError(f"Wrong output array format: shape or dtype do not coinside with input")
         for w,f in zip(params.c_out, f_out):
-            print(params.frag)
             output_frag_if_not_none(w, f, params.frag)
         LOG.debug(f"Processed {task_id} {params.frag}")
         return task_id, "OK"
@@ -296,19 +315,22 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
             #cube_names_for_formula = ["/".join(i[1:]) for i in cube_names_for_formula] 
             for num, nm in reversed(sorted(enumerate(cube_names_for_formula), key=lambda x: len(x[1]["name"]))):
                 self.formula = self.formula.replace("<seismic_3d>"+nm["name"]+'/'+nm["name2"], f"variable{num}")
-                name_count+=1
-
-        for num, nm in reversed(sorted(enumerate(attr_names_for_formula), key=lambda x: len(x[1]["name"]))):
-            self.formula = self.formula.replace("<horizonAttributes_3d>"+nm["name"]+'/'+nm["name2"], f"variable{name_count+num}")
-            name_count+=1
-        for num, nm in reversed(sorted(enumerate(hor_names_for_formula), key=lambda x: len(x[1]["name"]))):
-            self.formula = self.formula.replace("<horizons_3d>"+nm["name"], f"variable{name_count+num}")
+            name_count+=num
+        elif 'horizonAttributes_3d' in self.description["formula"]:
+            for num, nm in reversed(sorted(enumerate(attr_names_for_formula), key=lambda x: len(x[1]["name"]))):
+                self.formula = self.formula.replace("<horizonAttributes_3d>"+nm["name"]+'/'+nm["name2"], f"variable{name_count+num}")
+            name_count+=num
+        else:
+            for num, nm in reversed(sorted(enumerate(hor_names_for_formula), key=lambda x: len(x[1]["name"]))):
+                if 'horizons_3d' in self.description["formula"]:
+                    self.formula = self.formula.replace("<horizons_3d>"+nm["name"], f"variable{name_count+num}")
+            name_count+=num
         self.formula = self.formula.lower()
         self.formula = self.formula.strip()
          
         
         LOG.info(f"\n ***FORMULA*** \nOriginal formula: {self.description['formula']} \nFinal formula: {self.formula}")
-    def compute(self, f_in_tup: Tuple[np.ndarray],cu_in, context: Context) -> Tuple:
+    def compute(self, f_in_tup: Tuple[np.ndarray],data_in, context: Context) -> Tuple:
         LOG.debug(f"Computing {[f_in.shape for f_in in f_in_tup]}")
 
         if (f_in_tup[0]>= 0.1*MAXFLOAT).all() :
@@ -321,17 +343,16 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
         
         else:
             variable = list(f_in_tup)
-            for i, v in enumerate(f_in_tup):
-                
+            for i, v in enumerate(f_in_tup):             
                 variable[i] = np.where((variable[i] >= 0.1*MAXFLOAT) | (variable[i] == np.inf), np.nan, variable[i])
                 if len(variable[i].shape)==3:
-                    if cu_in[i].time_step != self.z_step:
+                    if data_in[i].time_step != self.z_step:
                         z = np.linspace(0,f_in_tup[i].shape[-1],f_in_tup[i].shape[-1], dtype=f_in_tup[i].dtype)
                         zs = np.linspace(0,f_in_tup[i].shape[-1],self.z_step, dtype=f_in_tup[i].dtype)
                         variable[i] = np.apply_along_axis(linear_interpolate, -1, f_in_tup[i], z, zs)
-                        variable[i] = variable[i][:,:,int(1E3*(self.z_start-cu_in[i].data_start)/self.z_step):int(1E3*(self.z_start-cu_in[i].data_start)/self.z_step+self.n_samples)]
+                        variable[i] = variable[i][:,:,int(1E3*(self.z_start-data_in[i].data_start)/self.z_step):int(1E3*(self.z_start-data_in[i].data_start)/self.z_step+self.n_samples)]
                     else:
-                        variable[i] = variable[i][:,:,int(1E3*(self.z_start-cu_in[i].data_start)/self.z_step):int(1E3*(self.z_start-cu_in[i].data_start)/self.z_step+self.n_samples)]
+                        variable[i] = variable[i][:,:,int(1E3*(self.z_start-data_in[i].data_start)/self.z_step):int(1E3*(self.z_start-data_in[i].data_start)/self.z_step+self.n_samples)]
                 elif len(variable[i].shape)!=3 and  "seismic_3d" in self.description["formula"] :
                     variable[i] = variable[i][:,:,None]  
                 globals() ["variable{}".format(i)] = variable[i]
