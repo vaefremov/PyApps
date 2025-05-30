@@ -310,21 +310,21 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
         # argument of compute(). Replacement are applied in reverse order of name lengths, most
         # long names replaced first.
         name_count=0
-        if self.output_data_type == "seismic_3d":
+        if "seismic_3d" in self.description["formula"]:
             #cube_names_for_formula = [i.split("/") for i in cube_names_for_formula]   
             #cube_names_for_formula = ["/".join(i[1:]) for i in cube_names_for_formula] 
             for num, nm in reversed(sorted(enumerate(cube_names_for_formula), key=lambda x: len(x[1]["name"]))):
                 self.formula = self.formula.replace("<seismic_3d>"+nm["name"]+'/'+nm["name2"], f"variable{num}")
-            name_count+=num
-        elif 'horizonAttributes_3d' in self.description["formula"]:
+                name_count+=num
+            print(name_count)
+        if 'horizonAttributes_3d' in self.description["formula"]:
             for num, nm in reversed(sorted(enumerate(attr_names_for_formula), key=lambda x: len(x[1]["name"]))):
                 self.formula = self.formula.replace("<horizonAttributes_3d>"+nm["name"]+'/'+nm["name2"], f"variable{name_count+num}")
-            name_count+=num
-        else:
+                name_count+=num
+        if 'horizons_3d' in self.description["formula"]:
             for num, nm in reversed(sorted(enumerate(hor_names_for_formula), key=lambda x: len(x[1]["name"]))):
-                if 'horizons_3d' in self.description["formula"]:
-                    self.formula = self.formula.replace("<horizons_3d>"+nm["name"], f"variable{name_count+num}")
-            name_count+=num
+                self.formula = self.formula.replace("<horizons_3d>"+nm["name"], f"variable{name_count+num}")
+                name_count+=num
         self.formula = self.formula.lower()
         self.formula = self.formula.strip()
          
