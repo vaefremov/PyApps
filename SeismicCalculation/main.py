@@ -145,7 +145,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
             self.z_step  = min(cubes_time_steps)
             self.z_start = max(data_starts)
             self.n_samples = int((min(max_time)-self.z_start)//self.z_step)
-        elif attr_names!=[]:
+        if attr_names!=[]:
             cubes = []
             for c in attrs:
                 min_i.append(c.min_i)
@@ -153,7 +153,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 min_x.append(c.min_x)
                 n_x.append(c.n_x)
 
-        elif hor_names!=[]: 
+        if hor_names!=[]: 
             cubes =[]
             for c in hors: 
                 min_i.append(c.min_i)
@@ -170,12 +170,11 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         return dates
 
     def create_output_datasets(self):
-
+    
         #if type(self.data_in[0]).__name__ == "DISeismicCube":
         if self.output_data_type == "seismic_3d":
-            cube_in = self.data_in[0]
+            cube_in = next(i for i in self.data_in if type(i).__name__ == "DISeismicCube")
             res = []
-            
             for result_name in self.out_names:
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
@@ -183,7 +182,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                                                                     max_xline = self.n_x-1, min_inline = self.min_i,min_xline = self.min_x,**self.out_data_params)# здесь должен быть правильный z_step,z_start
                 res.append(c_out)
         elif self.output_data_type == "horizonAttributes_3d":
-            hor = self.data_in[-1]
+            hor = next(i for i in self.data_in if type(i).__name__ == "DIHorizon3D")
             res = []
 
             for result_name in self.out_names:
@@ -194,7 +193,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 res.append(c_out)
 
         elif self.output_data_type == "horizons_3d":
-            hor = self.data_in[-1]
+            hor = next(i for i in self.data_in if type(i).__name__ == "DIHorizon3D")
             res = []
             
             for result_name in self.out_names:
@@ -254,9 +253,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                     w_out.write_data_fragment(f_coords[0], f_coords[2], f_out)
         #tmp_f = tuple([c.get_fragment_z(*params.frag,z_no=2,z_count=30) for c in params.c_in])
         #Если приходит куб, использовать готовую функцию чтения по фрагментам для класса куб, иначе get_fragment_2D
-        #if self.output_data_type == "horizonAttributes_3d":
-        #    tmp_f = tuple([self.get_fragment_2D(c,*params.frag) for c in params.c_in])
-        #else:    
+        #   
         tmp_f = tuple([c.get_fragment(*params.frag) if type(c).__name__ == "DISeismicCube"  else self.get_fragment_2D(c,*params.frag) for c in params.c_in])
 
         for f in tmp_f:
@@ -290,45 +287,32 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
     def __init__(self) -> None:
         super().__init__(in_name_par="seismic_3d",in_name_attr='horizonAttributes_3d',in_name_hor='horizons_3d',
                 out_name_par="result_name", out_names=["formula"],result_type = 'result_type')
-        # Input datasets names are converted to the agreed upon format 
-        # (the CR character in  "geometry\nname\nname2" replaced by "/"", geometry name omitted)
-        #cube_names_for_formula = ["/".join(nn.split("\n")[1:]) for nn in self.description[self.in_name_par]]
         cube_names_for_formula = self.description[self.in_name_par]
         hor_names_for_formula = self.description[self.in_name_hor]
         attr_names_for_formula = self.description[self.in_name_attr]
         self.formula = self.description["formula"]
         self.output_data_type = self.description['result_type']
-        # if 'seismic_3d' in self.description["formula"]:
-        #     self.output_data_type = "DISeismicCube"
-        # else:
-        #     if 'horizons_3d' in self.description["formula"] and 'horizonAttributes_3d' not in self.description["formula"]:
-        #         self.output_data_type = "DIHorizon3D"
-        #     else:
-        #         self.output_data_type = "DIAttribute2D"
         # Converting formula to the format that can be used in the compute() method context
         # Datasets names replaced with references to the corresponding fragment in f_in_tup
         # argument of compute(). Replacement are applied in reverse order of name lengths, most
         # long names replaced first.
         name_count=0
         if "seismic_3d" in self.description["formula"]:
-            #cube_names_for_formula = [i.split("/") for i in cube_names_for_formula]   
-            #cube_names_for_formula = ["/".join(i[1:]) for i in cube_names_for_formula] 
+
             for num, nm in reversed(sorted(enumerate(cube_names_for_formula), key=lambda x: len(x[1]["name"]))):
                 self.formula = self.formula.replace("<seismic_3d>"+nm["name"]+'/'+nm["name2"], f"variable{num}")
-                name_count+=num
-            print(name_count)
+            name_count+=num
         if 'horizonAttributes_3d' in self.description["formula"]:
             for num, nm in reversed(sorted(enumerate(attr_names_for_formula), key=lambda x: len(x[1]["name"]))):
                 self.formula = self.formula.replace("<horizonAttributes_3d>"+nm["name"]+'/'+nm["name2"], f"variable{name_count+num}")
-                name_count+=num
+            name_count+=num
         if 'horizons_3d' in self.description["formula"]:
             for num, nm in reversed(sorted(enumerate(hor_names_for_formula), key=lambda x: len(x[1]["name"]))):
                 self.formula = self.formula.replace("<horizons_3d>"+nm["name"], f"variable{name_count+num}")
-                name_count+=num
+            name_count+=num
         self.formula = self.formula.lower()
         self.formula = self.formula.strip()
          
-        
         LOG.info(f"\n ***FORMULA*** \nOriginal formula: {self.description['formula']} \nFinal formula: {self.formula}")
     def compute(self, f_in_tup: Tuple[np.ndarray],data_in, context: Context) -> Tuple:
         LOG.debug(f"Computing {[f_in.shape for f_in in f_in_tup]}")
@@ -359,6 +343,7 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
             f_out = ne.evaluate(self.formula)
             f_out = f_out.astype("float32")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
+          
             return (f_out,)
 if __name__ == "__main__":
     LOG.info(f"Starting job SeismicCalculation (pid {os.getpid()})")
