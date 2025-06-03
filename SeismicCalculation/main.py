@@ -85,7 +85,7 @@ def linear_interpolate(y, z, zs):
 def generate_fragments_grid_incr(min_i, n_i, inc_i, min_x, n_x, inc_x):
     """Generate grid with constant increments over inlines/xlines.
     """
-    res_real = [(i, j, min(n_i-1, i+inc_i-1), min(n_x-1, j+inc_x-1)) for i in range(min_i, n_i-1, inc_i) for j in range(min_x, n_x-1, inc_x)]
+    res_real = [(i, j, min(n_i-1, i+inc_i-1), min(n_x-1, j+inc_x-1)) for i in range(min_i,n_i-1, inc_i) for j in range(min_x,n_x-1, inc_x)]
     return res_real
     
 @abc.abstractmethod
@@ -118,9 +118,9 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         attrs = [self.session.get_attribute_2d_writer(cn['geometry_name'], cn['name'], cn['name2']) for cn in attr_names]
         hors = [self.session.get_horizon_3d(cn['geometry_name'], cn['name']) for cn in hor_names]
         min_i = []
-        n_i = []
+        max_i = []
         min_x = []
-        n_x = []
+        max_x = []
         if self.output_data_type == "seismic_3d":
             # Check that all input cubes have the same time-axis parameters
             c0 = cubes[0]
@@ -136,9 +136,9 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 max_time.append(c.data_start+c.time_step*c.n_samples)
 
                 min_i.append(c.min_i)
-                n_i.append(c.n_i)
+                max_i.append(c.n_i)
                 min_x.append(c.min_x)
-                n_x.append(c.n_x)
+                max_x.append(c.n_x)
                 if c.domain != c0.domain:
                     raise RuntimeError("Time axis parameters of the input cubes do not coincide")
             
@@ -149,22 +149,22 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
             cubes = []
             for c in attrs:
                 min_i.append(c.min_i)
-                n_i.append(c.n_i)
+                max_i.append(c.min_i+c.n_i)
                 min_x.append(c.min_x)
-                n_x.append(c.n_x)
+                max_x.append(c.min_x+c.n_x)
 
         if hor_names!=[]: 
             cubes =[]
             for c in hors: 
                 min_i.append(c.min_i)
-                n_i.append(c.n_i)
+                max_i.append(c.min_i+c.n_i)
                 min_x.append(c.min_x)
-                n_x.append(c.n_x)
+                max_x.append(c.min_x+c.n_x)
 
-        self.n_i = min(n_i) 
-        self.n_x = min(n_x)
         self.min_i = max(min_i)
         self.min_x = max(min_x)
+        self.n_i = min(max_i) - self.min_i
+        self.n_x = min(max_x) - self.min_x
         dates = cubes + attrs + hors
         LOG.debug(f"{dates=}")
         return dates
@@ -178,24 +178,22 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
             for result_name in self.out_names:
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
-                c_out = self.session.create_cube_writer_in_geometry(cube_in.geometry_name, name, name2, z_step = self.z_step, z_start = self.z_start, nz = self.n_samples,max_inline=self.n_i-1,
-                                                                    max_xline = self.n_x-1, min_inline = self.min_i,min_xline = self.min_x,**self.out_data_params)# здесь должен быть правильный z_step,z_start
+                c_out = self.session.create_cube_writer_in_geometry(cube_in.geometry_name, name, name2, z_step = self.z_step, z_start = self.z_start, nz = self.n_samples,max_inline=self.min_i+self.n_i-1,
+                                                                    max_xline=self.min_x+self.n_x-1, min_inline = self.min_i,min_xline = self.min_x,**self.out_data_params)# здесь должен быть правильный z_step,z_start
                 res.append(c_out)
         elif self.output_data_type == "horizonAttributes_3d":
             hor = next(i for i in self.data_in if type(i).__name__ == "DIHorizon3D")
             res = []
-
             for result_name in self.out_names:
                 
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
-                c_out = self.session.create_attribute_2d_writer_as_other(hor, name, name2, domain="D", copy_horizon_data=True)
+                c_out = self.session.create_attribute_2d_writer_as_other(hor, name, name2, domain="D", copy_horizon_data=True, min_nx = self.min_i, min_ny = self.min_x )
                 res.append(c_out)
 
         elif self.output_data_type == "horizons_3d":
             hor = next(i for i in self.data_in if type(i).__name__ == "DIHorizon3D")
             res = []
-            
             for result_name in self.out_names:
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
@@ -204,7 +202,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 res.append(c_out)
         return res
     def generate_fragments_grid_incr(self, incr_i, incr_x):
-        tmp = generate_fragments_grid_incr(self.min_i, self.n_i, incr_i, self.min_x, self.n_x, incr_x)
+        tmp = generate_fragments_grid_incr(self.min_i, self.min_i+self.n_i, incr_i, self.min_x,self.min_x+ self.n_x, incr_x)
         return [(i[0], i[2]-i[0]+1, i[1], i[3]-i[1]+1) for i in tmp]
     
     def generate_optimal_grid(self):
@@ -214,8 +212,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         incr_x = 64
         #c = self.data_in[0]
         # найти места пересечения
-        if self.output_data_type == "horizonAttributes_3d":
-            
+        if self.output_data_type == "horizonAttributes_3d":  
             #grid = self.generate_fragments_grid_incr(incr_i=self.n_i, incr_x =self.n_x)
             grid = [(self.min_i, self.n_i, self.min_x, self.n_x)]
         else:
@@ -228,6 +225,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         self.data_in = data_in
         #найти места пересечения
         grid = self.generate_optimal_grid()
+       
         #grid = generate_optimal_grid(min_i, n_i, incr_i, min_x, n_x, incr_x)
 
         w_out = self.create_output_datasets()
@@ -238,6 +236,7 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         self.total_frags = len(grid)
         run_args = {i[0]: ProcessCParams(data_in, w_out, i[1]) for i in enum_grid}
         return run_args  
+    
     def get_fragment_2D(self,c_in: Optional[str],  inline_no: int, inline_count: int, xline_no: int, xline_count: int) -> Optional[np.ndarray]:
         arg = c_in.get_data()
         return arg[inline_no - self.min_i:inline_no + inline_count - self.min_i + 1,xline_no - self.min_x:xline_no + xline_count - self.min_x + 1] 
@@ -343,7 +342,6 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
             f_out = ne.evaluate(self.formula)
             f_out = f_out.astype("float32")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
-          
             return (f_out,)
 if __name__ == "__main__":
     LOG.info(f"Starting job SeismicCalculation (pid {os.getpid()})")
