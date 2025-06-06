@@ -247,8 +247,8 @@ class DISession:
             "dx": original_info["d_inline"],
             "dy": original_info["d_xline"],
             "origin": original_info["origin"],
-            "nx": original_info["max_inline"], # we do not add 1 to compensate for in/x-line numbers starting from 1
-            "ny": original_info["max_xline"],
+            "nx": original_info["max_inline"] - kw.get("min_nx", original_info["min_inline"])+1, 
+            "ny": original_info["max_xline"] - kw.get("min_ny", original_info["min_xline"])+1,
             "geometry_id": original_info["geometry_id"],
             "geometry_name": original_info["geometry_name"]
         }
