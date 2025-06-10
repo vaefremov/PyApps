@@ -306,7 +306,7 @@ class DIAttribute2D(DIHorizon3DWriter):
                 LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
                 return res_status
             
-    def write_all_data(self, data_array, layers_names):
+    def write_all_data(self, data_array, layers_names, **kwargs):
         # make sure type of the input data is float32
         if data_array.dtype != np.float32:
             raise ValueError('Data type must be float32')
@@ -318,7 +318,11 @@ class DIAttribute2D(DIHorizon3DWriter):
         pref = struct.pack('<iii', nlayers, nx, ny)
         data = pref + data_array.tobytes()
         res_status = 200
-        with requests.post(url, data=data, params={"lnm": self._layers_names}, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
+        params={"lnm": self._layers_names,
+                "min_nx": kwargs.get("min_nx"),
+                "min_ny": kwargs.get("min_ny")
+                }
+        with requests.post(url, data=data, params=params, headers={"Content-Type": "application/octet-stream", "x-di-authorization": self.token}) as resp:
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
