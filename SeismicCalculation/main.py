@@ -58,10 +58,12 @@ def main_sigint_handler_with_exec(executor: ProcessPoolExecutor, signum, frame):
         child.kill()
     print("after killing subprocesses")
     os._exit(signum)
+
 def init_process():
     LOG.debug(f"Signals reset in child process {os.getpid()}")
     signal.signal(signal.SIGTERM, children_sigterm_handler)
     signal.signal(signal.SIGINT, children_sigterm_handler)
+
 def enlarge_fragment(frag: Frag, marg: int) -> Frag:
     no_i_f = frag.no_i - marg
     span_i_f = frag.span_i + 2*marg
@@ -74,6 +76,7 @@ def enlarge_fragment(frag: Frag, marg: int) -> Frag:
         span_x_f = frag.span_x + (marg + no_x_f) + marg
         no_x_f = 0
     return Frag(no_i_f, span_i_f, no_x_f, span_x_f)
+
 def linear_interpolate(y, z, zs):
     good_idx = np.where( np.isfinite(y) )
     try :
@@ -114,13 +117,13 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         #Отключил проверку ,так как в интерфейсе калькулятора уже предусметрено 
 
         cubes = [self.session.get_cube(cn['geometry_name'], cn['name'], cn['name2']) for cn in cube_names]
-        #attrs = [self.session.get_attribute_2d_writer(cn[-1],cn[0], "/".join(cn[1:-1])) for cn in attr_names]
         attrs = [self.session.get_attribute_2d_writer(cn['geometry_name'], cn['name'], cn['name2']) for cn in attr_names]
         hors = [self.session.get_horizon_3d(cn['geometry_name'], cn['name']) for cn in hor_names]
         min_i = []
         max_i = []
         min_x = []
         max_x = []
+        
         if self.output_data_type == "seismic_3d":
             # Check that all input cubes have the same time-axis parameters
             c0 = cubes[0]
@@ -146,7 +149,6 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
             self.z_start = max(data_starts)
             self.n_samples = int((min(max_time)-self.z_start)//self.z_step)
         if attr_names!=[]:
-            cubes = []
             for c in attrs:
                 min_i.append(c.min_i)
                 max_i.append(c.min_i+c.n_i)
@@ -154,7 +156,6 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 max_x.append(c.min_x+c.n_x)
 
         if hor_names!=[]: 
-            cubes =[]
             for c in hors: 
                 min_i.append(c.min_i)
                 max_i.append(c.min_i+c.n_i)
@@ -171,7 +172,6 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
 
     def create_output_datasets(self):
     
-        #if type(self.data_in[0]).__name__ == "DISeismicCube":
         if self.output_data_type == "seismic_3d":
             cube_in = next(i for i in self.data_in if type(i).__name__ == "DISeismicCube")
             res = []
@@ -188,16 +188,14 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
                 
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
-                c_out = self.session.create_attribute_2d_writer_as_other(hor, name, name2, domain="D", copy_horizon_data=True, min_nx = self.min_i, min_ny = self.min_x )
+                c_out = self.session.create_attribute_2d_in_geometry(hor.geometry_name, name, name2, min_nx=self.min_i, min_ny=self.min_x, nx=self.n_i, ny=self.n_x)
                 res.append(c_out)
-
         elif self.output_data_type == "horizons_3d":
             hor = next(i for i in self.data_in if type(i).__name__ == "DIHorizon3D")
             res = []
             for result_name in self.out_names:
                 name = self.description[self.out_name_par]
                 name2 = f"{result_name}"
-                #if self.cubes_in!={}:
                 c_out = self.session.create_horizon_3d_writer_as_other(hor, name)
                 res.append(c_out)
         return res
@@ -210,11 +208,8 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         """
         incr_i = 64
         incr_x = 64
-        #c = self.data_in[0]
-        # найти места пересечения
         if self.output_data_type == "horizonAttributes_3d":  
-            #grid = self.generate_fragments_grid_incr(incr_i=self.n_i, incr_x =self.n_x)
-            grid = [(self.min_i, self.n_i, self.min_x, self.n_x)]
+            grid = [(self.min_i, self.n_i-1, self.min_x, self.n_x-1)]
         else:
             grid = self.generate_fragments_grid_incr(incr_i, incr_x)
         self.grid = grid
@@ -226,8 +221,6 @@ class DiAppSeismic3DMultipleCustom(di_app.DiApp):
         #найти места пересечения
         grid = self.generate_optimal_grid()
        
-        #grid = generate_optimal_grid(min_i, n_i, incr_i, min_x, n_x, incr_x)
-
         w_out = self.create_output_datasets()
         
         LOG.debug(f"{grid=}")
@@ -297,18 +290,24 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
         # long names replaced first.
         name_count=0
         if "seismic_3d" in self.description["formula"]:
-
-            for num, nm in reversed(sorted(enumerate(cube_names_for_formula), key=lambda x: len(x[1]["name"]))):
+            k=0
+            #for num, nm in reversed(sorted(enumerate(cube_names_for_formula), key=lambda x: len(x[1]["name"]))):
+            for num, nm in enumerate(cube_names_for_formula):
                 self.formula = self.formula.replace("<seismic_3d>"+nm["name"]+'/'+nm["name2"], f"variable{num}")
-            name_count+=num
+                k+=1
+            name_count+=k
         if 'horizonAttributes_3d' in self.description["formula"]:
-            for num, nm in reversed(sorted(enumerate(attr_names_for_formula), key=lambda x: len(x[1]["name"]))):
+            k=0
+            for num, nm in enumerate(attr_names_for_formula):
                 self.formula = self.formula.replace("<horizonAttributes_3d>"+nm["name"]+'/'+nm["name2"], f"variable{name_count+num}")
-            name_count+=num
+                k+=1
+            name_count+=k
         if 'horizons_3d' in self.description["formula"]:
-            for num, nm in reversed(sorted(enumerate(hor_names_for_formula), key=lambda x: len(x[1]["name"]))):
+            k=0
+            for num, nm in enumerate(hor_names_for_formula):
                 self.formula = self.formula.replace("<horizons_3d>"+nm["name"], f"variable{name_count+num}")
-            name_count+=num
+                k+=1
+            name_count+=k
         self.formula = self.formula.lower()
         self.formula = self.formula.strip()
          
@@ -342,6 +341,7 @@ class SeismicCalculation(DiAppSeismic3DMultipleCustom):
             f_out = ne.evaluate(self.formula)
             f_out = f_out.astype("float32")
             np.nan_to_num(f_out, nan=MAXFLOAT, copy=False)
+          
             return (f_out,)
 if __name__ == "__main__":
     LOG.info(f"Starting job SeismicCalculation (pid {os.getpid()})")
