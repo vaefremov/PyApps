@@ -2,7 +2,7 @@ import requests
 import json
 import sys
 
-from .seismic_cube import DISeismicCube, DISeismicCubeWriter, DIGeometry
+from .seismic_cube import DISeismicCube, DISeismicCubeWriter, DIGeometry, DIGeometryInfo
 from .seismic_line import DISeismicLine, DISeismicLineWriter
 from .attribute import DIAttribute2D, DIHorizon3D, DIHorizon3DWriter
 from .di_job import DiJob
@@ -257,6 +257,40 @@ class DISession:
         new_info["mode"] = None
         new_info["min_nx"] = kw.get("min_nx", original_info["min_inline"])
         new_info["min_ny"] = kw.get("min_ny", original_info["min_xline"])
+        attr_writer._init_from_info(new_info)
+        attr_writer._create()
+        return attr_writer
+
+    def create_attribute_2d_in_geometry(self, geometry_name: str, name: str, name2: str, **kw) -> DIAttribute2D:
+        """Create planar (2D) attribute in geometry.
+
+        Args:
+            geometry_name (str): [description]
+            name (str): [description]
+            name2 (str): [description]
+            **kw (dict): set additional parameters: domain, mode, min_nx, min_ny, nx, ny
+        Returns:
+            DIAttribute2D: [description]
+        """
+        attr_writer = DIAttribute2D(self.project_id, geometry_name, name, name2)
+        attr_writer.server_url = self.server_url
+        attr_writer.token = self.token
+        geom = self.get_geometry(geometry_name)
+        geom_info: DIGeometryInfo = geom.info
+        new_info = {
+            "id": None,
+            "dx": geom_info.v_i,
+            "dy": geom_info.v_x,
+            "origin": geom_info.origin,
+            "nx": kw.get("nx"), 
+            "ny": kw.get("ny"),
+            "geometry_id": geom_info.id,
+            "geometry_name": geometry_name
+        }
+        new_info["domain"] = kw.get("domain", "T")
+        new_info["mode"] = None
+        new_info["min_nx"] = kw.get("min_nx", 1)
+        new_info["min_ny"] = kw.get("min_ny", 1)
         attr_writer._init_from_info(new_info)
         attr_writer._create()
         return attr_writer
