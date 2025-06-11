@@ -40,7 +40,7 @@ class DIHorizon3D:
         with requests.get(f"{self.server_url}/horizons/3d/list/{self.project_id}/") as resp:
             if resp.status_code != 200:
                 LOG.error("Cant' get list of cubes: %s", resp.status_code)
-                return None
+                raise RuntimeError(f"Cant' get list of cubes: {resp.status_code=}")
             resp_j = json.loads(resp.content)
             for i in resp_j:
                 if (i["geometry_name"] == self.geometry_name) and (i["name"] == self.name):
@@ -87,6 +87,7 @@ class DIHorizon3D:
             raw_data = resp.content
             if resp.status_code != 200:
                 LOG.error("Request finished with error: %s", resp.status_code)
+                raise RuntimeError(f"Request finished with error: {resp.status_code=}")
             nx, ny = struct.unpack("<ii", raw_data[:8])
             LOG.debug(f"{nx=}, {ny=}")
             gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
@@ -148,7 +149,7 @@ class DIHorizon3DWriter(DIHorizon3D):
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error("Failed to store horizon data, response code %s", resp.status_code)
-                return res_status
+                raise RuntimeError(f"Failed to store horizon data, response code {resp.status_code}")
 
     def write_data_fragment(self, start_nx: int, start_ny: int, data_array):
         if data_array.dtype != np.float32:
@@ -163,7 +164,7 @@ class DIHorizon3DWriter(DIHorizon3D):
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error("Failed to store horizon data, response code %s", resp.status_code)
-                return res_status
+                raise RuntimeError(f"Failed to store horizon data, response code {resp.status_code}")
 
 class DIAttribute2D(DIHorizon3DWriter):
     """Reader/writer for layered attributes.
@@ -179,7 +180,7 @@ class DIAttribute2D(DIHorizon3DWriter):
         with requests.get(f"{self.server_url}/attributes/3d/list/{self.project_id}/") as resp:
             if resp.status_code != 200:
                 LOG.error("Cant' get list of attributes: %s", resp.status_code)
-                return None
+                raise RuntimeError(f"Cant' get list of attributes: {resp.status_code}")
             resp_j = json.loads(resp.content)
             for i in resp_j:
                 if (i["geometry_name"] == self.geometry_name) and (i["name"] == self.name) and (i["name2"] == self.name2):
@@ -255,6 +256,7 @@ class DIAttribute2D(DIHorizon3DWriter):
             raw_data = resp.content
             if resp.status_code != 200:
                 LOG.error("Request finished with error: %s", resp.status_code)
+                raise RuntimeError(f"Request finished with error: {resp.status_code}")
             nlayers, nx, ny = struct.unpack("<iii", raw_data[:12])
             LOG.debug(f"{nlayers=} {nx=}, {ny=}")
             gr_arr = np.frombuffer(raw_data[12:], dtype=np.float32)
@@ -270,6 +272,7 @@ class DIAttribute2D(DIHorizon3DWriter):
             raw_data = resp.content
             if resp.status_code != 200:
                 LOG.error("Request finished with error: %s", resp.status_code)
+                raise RuntimeError(f"Request finished with error: {resp.status_code}")
             nx, ny = struct.unpack("<ii", raw_data[:8])
             LOG.debug(f"{nx=}, {ny=}")
             gr_arr = np.frombuffer(raw_data[8:], dtype=np.float32)
@@ -289,7 +292,7 @@ class DIAttribute2D(DIHorizon3DWriter):
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
-                return res_status
+                raise RuntimeError(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
             
     def write_horizon_data(self, data_array):
         # make sure type of the input data is float32
@@ -304,7 +307,7 @@ class DIAttribute2D(DIHorizon3DWriter):
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
-                return res_status
+                raise RuntimeError(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
             
     def write_all_data(self, data_array, layers_names, **kwargs):
         # make sure type of the input data is float32
@@ -326,7 +329,7 @@ class DIAttribute2D(DIHorizon3DWriter):
             res_status = resp.status_code
             if resp.status_code != 200:
                 LOG.error(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
-                return res_status
+                raise RuntimeError(f"Failed to store horizon data, response code {resp.status_code}, {resp.content}")
 
     @property
     def layers_names(self):
